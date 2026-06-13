@@ -4,10 +4,6 @@
     "descricao": "Anomalia de temperatura da superfície do mar no Pacífico equatorial central (região Niño 3.4), em °C. Acima de +0,5 por vários meses = El Niño; abaixo de -0,5 = La Niña. É o principal motor da previsibilidade sazonal: El Niño tende a verões mais quentes e chuvosos no Sudeste; La Niña, mais secos.",
     "serie": [
       {
-        "mes": "2024-04",
-        "valor": 0.82
-      },
-      {
         "mes": "2024-05",
         "valor": 0.49
       },
@@ -93,14 +89,18 @@
       },
       {
         "mes": "2026-02",
-        "valor": -0.15
+        "valor": -0.14
       },
       {
         "mes": "2026-03",
-        "valor": 0.11
+        "valor": 0.13
+      },
+      {
+        "mes": "2026-04",
+        "valor": 0.48
       }
     ],
-    "ultimo": 0.11
+    "ultimo": 0.48
   },
   "tsa": {
     "nome": "TSA (Atlântico Sul tropical)",
@@ -413,6 +413,6 @@
   },
   "enso": {
     "estado": "Neutro",
-    "oni": 0.11
+    "oni": 0.48
   }
 }

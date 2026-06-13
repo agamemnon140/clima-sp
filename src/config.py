@@ -21,8 +21,11 @@ LEADS = [3, 6, 12, 24]
 
 INDICES = {
     "oni": {
-        "url": "https://psl.noaa.gov/data/correlation/oni.data",
-        "format": "psl",
+        # CPC atualiza com ~1 mês de defasagem; o espelho PSL chega a 3+ meses
+        "url": "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
+        "format": "cpc_oni",
+        "fallback_url": "https://psl.noaa.gov/data/correlation/oni.data",
+        "fallback_format": "psl",
         "nome": "ONI (ENSO, Niño 3.4)",
         "descricao": "Anomalia de temperatura da superfície do mar no Pacífico equatorial "
                      "central (região Niño 3.4), em °C. Acima de +0,5 por vários meses = "

@@ -2,9 +2,10 @@
 import json
 from datetime import datetime, timezone
 
+import numpy as np
 import pandas as pd
 
-from . import build_dataset, config, forecast, monthly
+from . import build_dataset, config, forecast, model, monthly
 
 
 def _write(name: str, obj) -> None:
@@ -60,10 +61,50 @@ def export_mensal() -> None:
     _write("mensal.json", monthly.run())
 
 
+def export_influencias() -> None:
+    """Coeficientes padronizados do Ridge: efeito de +1 desvio padrão de cada
+    preditor sobre a anomalia do trimestre, em unidades físicas (mm ou °C),
+    médios sobre as 12 estações do ano."""
+    ds = pd.read_csv(config.PROCESSED_DIR / "dataset.csv")
+    out = {}
+    for var in config.VARIABLES:
+        out[var] = {}
+        for lead in config.LEADS:
+            coefs = []
+            sub = ds[(ds["var"] == var) & (ds["lead"] == lead)]
+            for _, grp in sub.groupby("season_month"):
+                reg = model.fit_anomaly_model(grp[config.FEATURES], grp["anomaly"])
+                coefs.append(reg[-1].coef_)
+            mean_coef = np.mean(coefs, axis=0)
+            out[var][str(lead)] = {f: round(float(c), 3)
+                                   for f, c in zip(config.FEATURES, mean_coef)}
+    _write("influencias.json", out)
+
+
+def export_anual() -> None:
+    """Médias anuais (anos completos) e taxa de aquecimento — onde a mudança
+    climática fica visível a olho nu."""
+    m = build_dataset.load_monthly("alvo_mensal")
+    full = m.groupby("year").filter(lambda g: len(g) == 12)
+    annual = full.groupby("year").agg(precip=("precip", "sum"),
+                                      temp=("temp", "mean")).reset_index()
+    recente = annual[annual["year"] >= config.TRAIN_START_YEAR]
+    taxa = float(np.polyfit(recente["year"], recente["temp"], 1)[0] * 10)
+    _write("anual.json", {
+        "anos": annual["year"].astype(int).tolist(),
+        "temp": [round(v, 2) for v in annual["temp"]],
+        "precip": [round(v, 0) for v in annual["precip"]],
+        "taxa_aquecimento_decada": round(taxa, 2),
+        "taxa_desde": config.TRAIN_START_YEAR,
+    })
+
+
 def export_all() -> None:
     result = forecast.run()
     export_previsao(result)
     export_mensal()
+    export_influencias()
+    export_anual()
     export_skill()
     export_indices()
     export_meta(result)

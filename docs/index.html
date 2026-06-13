@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>clima-sp — Previsão climática sazonal para a RMSP</title>
   <meta name="description" content="Previsão probabilística de chuva e temperatura para a Região Metropolitana de São Paulo em 3, 6, 12 e 24 meses, com validação honesta da habilidade do modelo.">
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -33,8 +33,33 @@
        a linha cinza pontilhada é a normal climatológica 1991–2020 de cada mês.
        Repare que a faixa é larga e o esperado gruda na normal conforme o horizonte avança —
        esse é o limite físico da previsibilidade, não um defeito do modelo.</p>
+    <div class="seletor" id="seletor-anos">
+      <span>Histórico:</span>
+      <button data-anos="2" class="ativo">2 anos</button>
+      <button data-anos="5">5 anos</button>
+      <button data-anos="10">10 anos</button>
+      <button data-anos="30">30 anos</button>
+      <button data-anos="0">tudo (1940)</button>
+    </div>
     <div class="grafico grafico-grande"><canvas id="grafico-chuva"></canvas></div>
     <div class="grafico grafico-grande"><canvas id="grafico-temp"></canvas></div>
+  </section>
+
+  <section>
+    <h2>⚖️ O que move a previsão</h2>
+    <p>Efeito de <strong>+1 desvio padrão</strong> de cada índice sobre a anomalia do trimestre
+       (média das 12 estações do ano), nas unidades da variável. Barras para cima = índice alto
+       aumenta chuva/temperatura; para baixo = reduz. Compare os horizontes: a influência dos
+       oceanos enfraquece com a distância, enquanto a <em>tendência de aquecimento</em>
+       segue firme — é por isso que ela domina as previsões longas de temperatura.</p>
+    <div class="grafico"><canvas id="grafico-infl-chuva"></canvas></div>
+    <div class="grafico"><canvas id="grafico-infl-temp"></canvas></div>
+  </section>
+
+  <section>
+    <h2>🔥 Aquecimento de longo prazo</h2>
+    <p id="aquecimento-texto"></p>
+    <div class="grafico grafico-grande"><canvas id="grafico-anual"></canvas></div>
   </section>
 
   <section>
@@ -96,6 +121,12 @@
     <details>
       <summary>Limitações importantes</summary>
       <ul>
+        <li><strong>Por que a faixa de incerteza (±1σ) quase não muda do mês 1 ao mês 24?</strong>
+            Porque a chuva/temperatura de <em>um mês individual</em> é dominada pelo caos
+            atmosférico, imprevisível além de ~2 semanas — mesmo no mês que vem. O que os índices
+            permitem prever é um leve deslocamento da <em>média</em>, pequeno comparado ao
+            sobe-e-desce natural. A faixa varia com a época do ano (verão: ±70 mm; inverno:
+            ±45 mm), mas não encolhe no curto prazo. É o retrato honesto do problema.</li>
         <li>Em 12 e 24 meses o RPSS é ≈ 0: a previsão útil nesses horizontes é a climatologia
             (o que é normal para a época) mais a tendência de aquecimento. A inclinação para
             "acima do normal" na temperatura vem majoritariamente dessa tendência.</li>
@@ -116,6 +147,6 @@
      as previsões oficiais do INMET e do CPTEC/INPE.</p>
 </footer>
 
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>
