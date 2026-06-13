@@ -35,5 +35,6 @@ jobs:
             echo "sem mudanças neste mês"
           else
             git commit -m "Atualização automática mensal ($(date -u +%Y-%m-%d))"
+            git pull --rebase origin main
             git push
           fi
