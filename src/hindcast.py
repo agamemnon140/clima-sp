@@ -60,7 +60,8 @@ def skill_table(hindcast: pd.DataFrame) -> pd.DataFrame:
 def run() -> pd.DataFrame:
     dataset = pd.read_csv(config.PROCESSED_DIR / "dataset.csv")
     hindcast = run_hindcast(dataset)
-    hindcast.to_csv(config.PROCESSED_DIR / "hindcast.csv", index=False)
+    # float_format fixo evita diffs espúrios entre plataformas no commit mensal
+    hindcast.to_csv(config.PROCESSED_DIR / "hindcast.csv", index=False, float_format="%.4f")
     skill = skill_table(hindcast)
     skill.to_csv(config.PROCESSED_DIR / "skill.csv", index=False)
     print(skill.to_string(index=False))
