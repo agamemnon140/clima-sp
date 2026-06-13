@@ -1,0 +1,40 @@
+[
+  {
+    "mes": "2026-06",
+    "gerado_em": "2026-06-13T16:16:26+00:00",
+    "indices": {
+      "oni": 0.16,
+      "tsa": 0.29,
+      "dmi": 0.08,
+      "aao": 0.3
+    },
+    "defasagens_meses": {
+      "oni": 2,
+      "tsa": 6,
+      "dmi": 14,
+      "aao": 1
+    },
+    "enso": "Neutro",
+    "resumo": {
+      "estacao": "SON 2026",
+      "chuva": {
+        "p_abaixo": 0.336,
+        "p_normal": 0.288,
+        "p_acima": 0.375,
+        "anomalia": 2.32,
+        "climatologia": 354.1,
+        "limiar_abaixo": -45.85,
+        "limiar_acima": 26.85
+      },
+      "temperatura": {
+        "p_abaixo": 0.198,
+        "p_normal": 0.287,
+        "p_acima": 0.515,
+        "anomalia": 0.53,
+        "climatologia": 19.7,
+        "limiar_abaixo": -0.58,
+        "limiar_acima": 0.27
+      }
+    }
+  }
+]

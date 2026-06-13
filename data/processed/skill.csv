@@ -1,9 +1,9 @@
 var,lead,rpss,hit_rate,n
-precipitacao,3,0.0185,0.3935,554
-precipitacao,6,0.0185,0.3628,554
-precipitacao,12,0.0157,0.3816,553
-precipitacao,24,0.0195,0.3863,541
-temperatura,3,0.0368,0.4188,554
-temperatura,6,0.012,0.3538,554
-temperatura,12,-0.0136,0.3309,553
-temperatura,24,0.0117,0.3623,541
+precipitacao,3,0.0156,0.3899,554
+precipitacao,6,0.0091,0.3394,554
+precipitacao,12,0.0093,0.3599,553
+precipitacao,24,0.0167,0.3937,541
+temperatura,3,0.0392,0.3845,554
+temperatura,6,0.0132,0.3646,554
+temperatura,12,-0.0186,0.3201,553
+temperatura,24,0.0166,0.3826,541

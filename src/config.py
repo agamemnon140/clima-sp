@@ -66,4 +66,5 @@ SEASON_NAMES = ["JFM", "FMA", "MAM", "AMJ", "MJJ", "JJA",
                 "JAS", "ASO", "SON", "OND", "NDJ", "DJF"]
 
 VARIABLES = ["precipitacao", "temperatura"]
-FEATURES = ["oni", "tsa", "dmi", "aao", "trend"]
+# persist = anomalia recente observada da própria variável (persistência)
+FEATURES = ["oni", "tsa", "dmi", "aao", "trend", "persist"]
