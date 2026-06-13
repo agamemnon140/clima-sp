@@ -2,10 +2,104 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>clima-sp — Previsão sazonal para a RMSP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>clima-sp — Previsão climática sazonal para a RMSP</title>
+  <meta name="description" content="Previsão probabilística de chuva e temperatura para a Região Metropolitana de São Paulo em 3, 6, 12 e 24 meses, com validação honesta da habilidade do modelo.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <h1>clima-sp</h1>
-  <p>Dashboard em construção. Volte em breve.</p>
+<header>
+  <h1>🌦️ clima-sp</h1>
+  <p class="subtitulo">Previsão climática sazonal probabilística para a Região Metropolitana de São Paulo</p>
+  <p id="atualizacao" class="atualizacao"></p>
+</header>
+
+<main>
+  <section id="aviso" class="aviso">
+    <strong>Leia antes de usar:</strong> nenhum modelo no mundo prevê o tempo de forma determinística
+    com meses de antecedência. O que este modelo (e os centros oficiais) fazem é estimar
+    <em>probabilidades</em> de um trimestre ficar abaixo, dentro ou acima do normal.
+    A habilidade é modesta em 3 meses, marginal em 6 e, em 12–24 meses, a previsão é
+    essencialmente climatologia + tendência de aquecimento. A seção
+    <a href="#skill">Habilidade do modelo</a> mostra os números reais, sem maquiagem.
+  </section>
+
+  <section>
+    <h2>📅 Previsão atual</h2>
+    <p id="previsao-intro"></p>
+    <div id="cards-previsao" class="cards"></div>
+  </section>
+
+  <section id="skill">
+    <h2>🎯 Habilidade do modelo (validação 1979–presente)</h2>
+    <p>RPSS (Ranked Probability Skill Score) comparado à climatologia: 0 = igual a chutar
+       as frequências históricas; 1 = previsão perfeita. Valores típicos de previsão sazonal
+       no Sudeste do Brasil ficam abaixo de 0,1 — e caem com o horizonte. Validação
+       leave-one-year-out, sem vazamento de dados.</p>
+    <div class="grafico"><canvas id="grafico-skill"></canvas></div>
+    <div id="tabela-skill"></div>
+  </section>
+
+  <section>
+    <h2>🌊 Índices climáticos agora</h2>
+    <p id="enso-estado"></p>
+    <div id="cards-indices" class="cards-indices"></div>
+  </section>
+
+  <section>
+    <h2>🏛️ Previsões oficiais</h2>
+    <ul class="oficiais">
+      <li><a href="http://clima1.cptec.inpe.br/" target="_blank" rel="noopener">CPTEC/INPE — Previsão climática sazonal</a>
+          — previsão oficial brasileira por conjunto de modelos dinâmicos, com nota técnica mensal para cada trimestre.</li>
+      <li><a href="https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso_advisory/" target="_blank" rel="noopener">NOAA CPC — ENSO Advisory</a>
+          — diagnóstico e previsão oficial do El Niño/La Niña, atualizado mensalmente (em inglês).</li>
+      <li><a href="https://climate.copernicus.eu/seasonal-forecasts" target="_blank" rel="noopener">Copernicus C3S — Seasonal Forecasts</a>
+          — previsões sazonais multi-modelo europeias (ECMWF, Météo-France, UKMO etc.), mapas globais (em inglês).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>🔬 Metodologia e limitações</h2>
+    <details>
+      <summary>Como o modelo funciona</summary>
+      <ul>
+        <li><strong>Alvo:</strong> anomalias de precipitação acumulada e temperatura média em trimestres
+            móveis (JFM, FMA, …, DJF) para o ponto -23,5°S -46,6°O (RMSP), série ERA5 desde 1940
+            via Open-Meteo. Climatologia de referência: 1991–2020.</li>
+        <li><strong>Preditores:</strong> ONI (ENSO), TSA (Atlântico Sul tropical), DMI (Dipolo do Índico),
+            AAO (Oscilação Antártica) — médias dos 3 meses anteriores à inicialização — e um termo de
+            tendência linear que captura o aquecimento de longo prazo.</li>
+        <li><strong>Método:</strong> regressão logística multinomial regularizada (probabilidades dos tercis)
+            e regressão Ridge (anomalia pontual), um modelo por variável × horizonte × estação do ano.
+            As probabilidades são encolhidas em direção à climatologia para evitar superconfiança.</li>
+        <li><strong>Validação:</strong> leave-one-year-out de 1979 ao presente — tercis, padronização e
+            coeficientes recalculados dentro de cada dobra.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>Limitações importantes</summary>
+      <ul>
+        <li>Em 12 e 24 meses o RPSS é ≈ 0: a previsão útil nesses horizontes é a climatologia
+            (o que é normal para a época) mais a tendência de aquecimento. A inclinação para
+            "acima do normal" na temperatura vem majoritariamente dessa tendência.</li>
+        <li>O estado do ENSO com 12–24 meses de antecedência é imprevisível
+            (barreira de previsibilidade do outono austral).</li>
+        <li>Ponto único de grade ERA5 ≠ rede de estações; eventos extremos locais não são representados.</li>
+        <li>Alguns índices chegam com defasagem de meses (ver rodapé); usa-se persistência do último valor.</li>
+      </ul>
+    </details>
+  </section>
+</main>
+
+<footer>
+  <p id="meta-rodape"></p>
+  <p>Código aberto: <a href="https://github.com/agamemnon140/clima-sp">github.com/agamemnon140/clima-sp</a> —
+     atualização automática mensal via GitHub Actions.</p>
+  <p>Fontes: NOAA PSL/CPC (índices), ERA5/Open-Meteo (observações). Este site não substitui
+     as previsões oficiais do INMET e do CPTEC/INPE.</p>
+</footer>
+
+<script src="js/app.js"></script>
 </body>
 </html>
