@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>clima-sp — Previsão climática sazonal para a RMSP</title>
   <meta name="description" content="Previsão probabilística de chuva e temperatura para a Região Metropolitana de São Paulo em 3, 6, 12 e 24 meses, com validação honesta da habilidade do modelo.">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=3">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -55,6 +55,10 @@
 
   <section>
     <h2>🌊 Índices climáticos agora</h2>
+    <p>Estes quatro índices medem o estado dos oceanos e da circulação atmosférica —
+       as componentes lentas do clima que dão alguma previsibilidade meses à frente.
+       São os preditores que alimentam o modelo; cada card explica o que o índice
+       significa e como costuma afetar São Paulo.</p>
     <p id="enso-estado"></p>
     <div id="cards-indices" class="cards-indices"></div>
   </section>
@@ -112,6 +116,6 @@
      as previsões oficiais do INMET e do CPTEC/INPE.</p>
 </footer>
 
-<script src="js/app.js"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>
