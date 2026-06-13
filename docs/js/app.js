@@ -29,6 +29,69 @@ function barraProbs(v) {
   return `<div class="barra">${html}</div>`;
 }
 
+function renderMensal(mensal) {
+  const hist = mensal.historico;
+  const prev = mensal.previsao;
+  const labels = [...hist.meses, ...prev.map(p => p.mes)].map(fmtMes);
+  const nHist = hist.meses.length;
+
+  const configVar = {
+    precipitacao: { canvas: "grafico-chuva", titulo: "Chuva mensal (mm)", cor: "#1c5d99",
+                    banda: "rgba(28, 93, 153, .18)", minY: 0 },
+    temperatura: { canvas: "grafico-temp", titulo: "Temperatura média mensal (°C)", cor: "#e07b39",
+                   banda: "rgba(224, 123, 57, .18)", minY: null },
+  };
+
+  for (const [varName, cfg] of Object.entries(configVar)) {
+    // séries com null fora do seu trecho; previsão começa colada no último observado
+    const observado = [...hist[varName], ...prev.map(() => null)];
+    const esperado = labels.map(() => null);
+    const sup = labels.map(() => null);
+    const inf = labels.map(() => null);
+    esperado[nHist - 1] = hist[varName][nHist - 1];
+    prev.forEach((p, i) => {
+      const v = p[varName];
+      esperado[nHist + i] = v.esperado;
+      sup[nHist + i] = v.esperado + v.sigma;
+      inf[nHist + i] = Math.max(v.esperado - v.sigma, cfg.minY ?? -Infinity);
+    });
+    const climatologia = [
+      ...hist.climatologia[varName],
+      ...prev.map(p => p[varName].climatologia),
+    ];
+
+    new Chart(document.getElementById(cfg.canvas), {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          { label: "Observado", data: observado, borderColor: cfg.cor,
+            borderWidth: 2, pointRadius: 0, fill: false },
+          { label: "Esperado (modelo)", data: esperado, borderColor: cfg.cor,
+            borderDash: [6, 4], borderWidth: 2, pointRadius: 0, fill: false },
+          { label: "+1σ", data: sup, borderWidth: 0, pointRadius: 0, fill: false },
+          { label: "Faixa ±1σ", data: inf, borderWidth: 0, pointRadius: 0,
+            backgroundColor: cfg.banda, fill: "-1" },
+          { label: "Normal 1991–2020", data: climatologia, borderColor: "#9aa7b3",
+            borderDash: [2, 3], borderWidth: 1.5, pointRadius: 0, fill: false },
+        ],
+      },
+      options: {
+        plugins: {
+          title: { display: true, text: cfg.titulo },
+          legend: { labels: { filter: item => item.text !== "+1σ" } },
+          tooltip: { filter: item => item.dataset.label !== "+1σ" },
+        },
+        scales: {
+          y: cfg.minY === null ? {} : { min: cfg.minY },
+          x: { ticks: { maxTicksLimit: 16 } },
+        },
+        interaction: { mode: "index", intersect: false },
+      },
+    });
+  }
+}
+
 function renderPrevisao(prev) {
   document.getElementById("previsao-intro").innerHTML =
     `Inicializada em <strong>${fmtMes(prev.inicializacao)}</strong> com os índices mais recentes ` +
@@ -131,8 +194,9 @@ function renderMeta(meta) {
 
 (async () => {
   try {
-    const [prev, skill, indices, meta] = await Promise.all(
-      ["previsao", "skill", "indices", "meta"].map(carregar));
+    const [prev, mensal, skill, indices, meta] = await Promise.all(
+      ["previsao", "mensal", "skill", "indices", "meta"].map(carregar));
+    renderMensal(mensal);
     renderPrevisao(prev);
     renderSkill(skill);
     renderIndices(indices);
