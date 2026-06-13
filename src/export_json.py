@@ -30,6 +30,7 @@ def export_indices() -> dict:
         df = build_dataset.load_monthly(name).sort_values(["year", "month"]).tail(24)
         out[name] = {
             "nome": spec["nome"],
+            "descricao": spec["descricao"],
             "serie": [{"mes": f"{int(r.year)}-{int(r.month):02d}", "valor": round(r.value, 2)}
                       for r in df.itertuples()],
             "ultimo": round(float(df["value"].iloc[-1]), 2),

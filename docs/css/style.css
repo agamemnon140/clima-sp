@@ -77,6 +77,8 @@ tr:nth-child(even) { background: #eef3f8; }
 .card-indice h3 { margin: 0; font-size: .95rem; color: var(--azul-escuro); }
 .card-indice .valor { font-size: 1.5rem; font-weight: 700; margin: .2rem 0; }
 .card-indice canvas { width: 100% !important; height: 60px !important; }
+.card-indice .descricao { font-size: .78rem; color: var(--cinza); margin: .5rem 0 0; }
+.limiares { font-size: .75rem; color: var(--cinza); margin: .2rem 0 0; }
 
 .estado-enso { display: inline-block; padding: .15em .7em; border-radius: 999px; color: #fff; font-weight: 600; }
 .enso-neutro { background: var(--cinza); }

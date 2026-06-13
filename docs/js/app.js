@@ -9,7 +9,7 @@ const NOMES_VAR = {
 };
 
 async function carregar(nome) {
-  const resp = await fetch(`data/${nome}.json`);
+  const resp = await fetch(`data/${nome}.json`, { cache: "no-store" });
   if (!resp.ok) throw new Error(`falha ao carregar ${nome}.json`);
   return resp.json();
 }
@@ -43,6 +43,7 @@ function renderMensal(mensal) {
   };
 
   for (const [varName, cfg] of Object.entries(configVar)) {
+    if (!document.getElementById(cfg.canvas)) continue; // HTML antigo em cache
     // séries com null fora do seu trecho; previsão começa colada no último observado
     const observado = [...hist[varName], ...prev.map(() => null)];
     const esperado = labels.map(() => null);
@@ -166,19 +167,33 @@ function renderIndices(indices) {
     cont.insertAdjacentHTML("beforeend",
       `<div class="card-indice"><h3>${idx.nome}</h3>
        <p class="valor">${idx.ultimo >= 0 ? "+" : ""}${idx.ultimo}</p>
-       <canvas id="${id}"></canvas></div>`);
+       <canvas id="${id}"></canvas>
+       <p class="descricao">${idx.descricao || ""}</p></div>`);
+    const labels = idx.serie.map(p => fmtMes(p.mes));
+    const datasets = [{ label: idx.nome, data: idx.serie.map(p => p.valor),
+                        borderColor: "#1c5d99", borderWidth: 1.5, pointRadius: 0, fill: false }];
+    if (key === "oni") {
+      // limiares oficiais da NOAA: ONI >= +0,5 = El Niño, <= -0,5 = La Niña
+      datasets.push(
+        { label: "limiar El Niño (+0,5)", data: labels.map(() => 0.5),
+          borderColor: "rgba(192, 98, 43, .8)", borderDash: [4, 3], borderWidth: 1, pointRadius: 0, fill: false },
+        { label: "limiar La Niña (-0,5)", data: labels.map(() => -0.5),
+          borderColor: "rgba(28, 93, 153, .8)", borderDash: [4, 3], borderWidth: 1, pointRadius: 0, fill: false });
+    }
     new Chart(document.getElementById(id), {
       type: "line",
-      data: {
-        labels: idx.serie.map(p => fmtMes(p.mes)),
-        datasets: [{ data: idx.serie.map(p => p.valor), borderColor: "#1c5d99",
-                     borderWidth: 1.5, pointRadius: 0, fill: false }],
-      },
+      data: { labels, datasets },
       options: {
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: false },
+                   tooltip: { filter: item => item.datasetIndex === 0 } },
         scales: { x: { display: false }, y: { ticks: { font: { size: 9 } } } },
       },
     });
+    if (key === "oni") {
+      document.getElementById(id).insertAdjacentHTML("afterend",
+        `<p class="limiares">— — acima de <span style="color:var(--abaixo)">+0,5 = El Niño</span> ·
+         abaixo de <span style="color:var(--azul)">-0,5 = La Niña</span></p>`);
+    }
   }
 }
 
@@ -196,11 +211,14 @@ function renderMeta(meta) {
   try {
     const [prev, mensal, skill, indices, meta] = await Promise.all(
       ["previsao", "mensal", "skill", "indices", "meta"].map(carregar));
-    renderMensal(mensal);
-    renderPrevisao(prev);
-    renderSkill(skill);
-    renderIndices(indices);
-    renderMeta(meta);
+    // cada bloco isolado: a falha de um não derruba os demais
+    const blocos = [
+      [renderMensal, mensal], [renderPrevisao, prev], [renderSkill, skill],
+      [renderIndices, indices], [renderMeta, meta],
+    ];
+    for (const [fn, dados] of blocos) {
+      try { fn(dados); } catch (err) { console.error(fn.name, err); }
+    }
   } catch (err) {
     document.getElementById("previsao-intro").textContent =
       "Erro ao carregar os dados do dashboard: " + err.message;
