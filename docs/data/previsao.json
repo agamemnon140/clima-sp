@@ -1,0 +1,122 @@
+{
+  "inicializacao": "2026-06",
+  "indices_usados": {
+    "oni": -0.14,
+    "tsa": 0.29,
+    "dmi": 0.08,
+    "aao": 0.3,
+    "trend": 2026.46
+  },
+  "defasagens_meses": {
+    "oni": 3,
+    "tsa": 6,
+    "dmi": 14,
+    "aao": 1
+  },
+  "previsoes": [
+    {
+      "lead": 3,
+      "estacao": "SON",
+      "ano": 2026,
+      "inicio": "2026-09",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.412,
+          "p_normal": 0.274,
+          "p_acima": 0.314,
+          "anomalia": -33.98,
+          "climatologia": 354.1,
+          "limiar_abaixo": -45.85,
+          "limiar_acima": 26.85
+        },
+        "temperatura": {
+          "p_abaixo": 0.234,
+          "p_normal": 0.285,
+          "p_acima": 0.481,
+          "anomalia": 0.31,
+          "climatologia": 19.7,
+          "limiar_abaixo": -0.58,
+          "limiar_acima": 0.27
+        }
+      }
+    },
+    {
+      "lead": 6,
+      "estacao": "DJF",
+      "ano": 2026,
+      "inicio": "2026-12",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.435,
+          "p_normal": 0.267,
+          "p_acima": 0.297,
+          "anomalia": -59.41,
+          "climatologia": 585.7,
+          "limiar_abaixo": -35.51,
+          "limiar_acima": 40.39
+        },
+        "temperatura": {
+          "p_abaixo": 0.342,
+          "p_normal": 0.222,
+          "p_acima": 0.437,
+          "anomalia": -0.05,
+          "climatologia": 22.1,
+          "limiar_abaixo": -0.51,
+          "limiar_acima": 0.22
+        }
+      }
+    },
+    {
+      "lead": 12,
+      "estacao": "JJA",
+      "ano": 2027,
+      "inicio": "2027-06",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.403,
+          "p_normal": 0.342,
+          "p_acima": 0.255,
+          "anomalia": -19.8,
+          "climatologia": 140.2,
+          "limiar_abaixo": -37.7,
+          "limiar_acima": 22.2
+        },
+        "temperatura": {
+          "p_abaixo": 0.292,
+          "p_normal": 0.304,
+          "p_acima": 0.404,
+          "anomalia": 0.39,
+          "climatologia": 16.8,
+          "limiar_abaixo": -0.41,
+          "limiar_acima": 0.11
+        }
+      }
+    },
+    {
+      "lead": 24,
+      "estacao": "JJA",
+      "ano": 2028,
+      "inicio": "2028-06",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.415,
+          "p_normal": 0.349,
+          "p_acima": 0.236,
+          "anomalia": -35.38,
+          "climatologia": 140.2,
+          "limiar_abaixo": -38.16,
+          "limiar_acima": 20.6
+        },
+        "temperatura": {
+          "p_abaixo": 0.275,
+          "p_normal": 0.332,
+          "p_acima": 0.393,
+          "anomalia": 0.41,
+          "climatologia": 16.8,
+          "limiar_abaixo": -0.42,
+          "limiar_acima": 0.11
+        }
+      }
+    }
+  ]
+}
