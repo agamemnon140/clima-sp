@@ -28,6 +28,25 @@ def parse_psl(text: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["year", "month", "value"])
 
 
+# estações do ONI na ordem do CPC; o ano refere-se ao mês central
+ONI_SEASONS = ["DJF", "JFM", "FMA", "MAM", "AMJ", "MJJ",
+               "JJA", "JAS", "ASO", "SON", "OND", "NDJ"]
+
+
+def parse_cpc_oni(text: str) -> pd.DataFrame:
+    """Formato oni.ascii.txt: 'SEAS YR TOTAL ANOM'; mês = mês central da estação."""
+    rows = []
+    for line in text.splitlines():
+        toks = line.split()
+        if len(toks) != 4 or toks[0] not in ONI_SEASONS:
+            continue
+        year, anom = int(toks[1]), float(toks[3])
+        month = ONI_SEASONS.index(toks[0]) + 1
+        if anom > MISSING_THRESHOLD:
+            rows.append((year, month, anom))
+    return pd.DataFrame(rows, columns=["year", "month", "value"])
+
+
 def parse_cpc(text: str) -> pd.DataFrame:
     """Formato CPC: uma linha 'ano mes valor' por registro."""
     rows = []
@@ -44,13 +63,27 @@ def parse_cpc(text: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["year", "month", "value"])
 
 
+PARSERS = {"psl": parse_psl, "cpc": parse_cpc, "cpc_oni": parse_cpc_oni}
+
+
+def _download(url: str, fmt: str) -> pd.DataFrame:
+    resp = requests.get(url, timeout=60)
+    resp.raise_for_status()
+    return PARSERS[fmt](resp.text)
+
+
 def fetch_all() -> None:
     config.RAW_DIR.mkdir(parents=True, exist_ok=True)
     for name, spec in config.INDICES.items():
-        resp = requests.get(spec["url"], timeout=60)
-        resp.raise_for_status()
-        parser = parse_psl if spec["format"] == "psl" else parse_cpc
-        df = parser(resp.text)
+        try:
+            df = _download(spec["url"], spec["format"])
+            if df.empty:
+                raise RuntimeError("nenhum dado parseado")
+        except Exception as exc:
+            if "fallback_url" not in spec:
+                raise
+            print(f"{name}: fonte primaria falhou ({exc}), usando fallback")
+            df = _download(spec["fallback_url"], spec["fallback_format"])
         if df.empty:
             raise RuntimeError(f"Indice {name}: nenhum dado parseado de {spec['url']}")
         df = df.sort_values(["year", "month"]).reset_index(drop=True)

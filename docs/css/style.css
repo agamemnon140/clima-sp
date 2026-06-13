@@ -67,6 +67,13 @@ h2 { color: var(--azul-escuro); border-bottom: 2px solid #d7e3ee; padding-bottom
 .grafico { background: var(--card); border-radius: 10px; padding: 1rem; max-width: 720px; }
 .grafico-grande { max-width: 100%; margin-bottom: 1rem; }
 
+.seletor { margin: .6rem 0 1rem; font-size: .9rem; color: var(--cinza); }
+.seletor button {
+  background: var(--card); border: 1px solid #c6d4e0; border-radius: 999px;
+  padding: .25em .9em; margin-left: .35em; cursor: pointer; font-size: .85rem; color: var(--azul-escuro);
+}
+.seletor button.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+
 table { border-collapse: collapse; margin-top: 1rem; background: var(--card); border-radius: 8px; overflow: hidden; }
 th, td { padding: .45rem .9rem; text-align: center; font-size: .9rem; }
 th { background: var(--azul-escuro); color: #fff; }

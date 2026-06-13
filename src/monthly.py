@@ -14,7 +14,6 @@ import pandas as pd
 from . import build_dataset, config, forecast, model
 
 MONTHLY_LEADS = range(0, 25)  # lead 0 = mês corrente (ainda sem observação fechada)
-HIST_MONTHS = 24
 
 
 def monthly_anomalies() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -77,7 +76,8 @@ def run() -> dict:
             }
         previsao.append(entry)
 
-    hist = monthly.tail(HIST_MONTHS)
+    # série completa: o dashboard decide quantos anos exibir
+    hist = monthly
     historico = {
         "meses": [f"{int(r.year)}-{int(r.month):02d}" for r in hist.itertuples()],
         "precipitacao": [round(v, 1) for v in hist["precipitacao"]],

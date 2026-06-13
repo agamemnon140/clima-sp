@@ -29,8 +29,20 @@ function barraProbs(v) {
   return `<div class="barra">${html}</div>`;
 }
 
-function renderMensal(mensal) {
-  const hist = mensal.historico;
+const chartsMensais = {};
+
+function renderMensal(mensal, anosHistorico = 2) {
+  // recorte do histórico conforme o seletor (0 = série completa desde 1940)
+  const corte = anosHistorico > 0 ? anosHistorico * 12 : mensal.historico.meses.length;
+  const hist = {
+    meses: mensal.historico.meses.slice(-corte),
+    precipitacao: mensal.historico.precipitacao.slice(-corte),
+    temperatura: mensal.historico.temperatura.slice(-corte),
+    climatologia: {
+      precipitacao: mensal.historico.climatologia.precipitacao.slice(-corte),
+      temperatura: mensal.historico.climatologia.temperatura.slice(-corte),
+    },
+  };
   const prev = mensal.previsao;
   const labels = [...hist.meses, ...prev.map(p => p.mes)].map(fmtMes);
   const nHist = hist.meses.length;
@@ -44,6 +56,7 @@ function renderMensal(mensal) {
 
   for (const [varName, cfg] of Object.entries(configVar)) {
     if (!document.getElementById(cfg.canvas)) continue; // HTML antigo em cache
+    if (chartsMensais[cfg.canvas]) chartsMensais[cfg.canvas].destroy();
     // séries com null fora do seu trecho; previsão começa colada no último observado
     const observado = [...hist[varName], ...prev.map(() => null)];
     const esperado = labels.map(() => null);
@@ -61,7 +74,7 @@ function renderMensal(mensal) {
       ...prev.map(p => p[varName].climatologia),
     ];
 
-    new Chart(document.getElementById(cfg.canvas), {
+    chartsMensais[cfg.canvas] = new Chart(document.getElementById(cfg.canvas), {
       type: "line",
       data: {
         labels,
@@ -91,6 +104,93 @@ function renderMensal(mensal) {
       },
     });
   }
+}
+
+function ligarSeletor(mensal) {
+  const seletor = document.getElementById("seletor-anos");
+  if (!seletor) return;
+  seletor.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      seletor.querySelectorAll("button").forEach(b => b.classList.remove("ativo"));
+      btn.classList.add("ativo");
+      renderMensal(mensal, Number(btn.dataset.anos));
+    });
+  });
+}
+
+const NOMES_PREDITORES = {
+  oni: "ONI (El Niño/La Niña)",
+  tsa: "TSA (Atl. Sul)",
+  dmi: "DMI (Índico)",
+  aao: "AAO (Antártica)",
+  trend: "Tendência (aquecimento)",
+};
+
+function renderInfluencias(infl) {
+  const cfgs = [
+    { var: "precipitacao", canvas: "grafico-infl-chuva", titulo: "Chuva: efeito no trimestre (mm por +1 DP)" },
+    { var: "temperatura", canvas: "grafico-infl-temp", titulo: "Temperatura: efeito no trimestre (°C por +1 DP)" },
+  ];
+  const coresLead = { 3: "#123c63", 6: "#1c5d99", 12: "#6f9cc4", 24: "#b9cfe2" };
+  for (const cfg of cfgs) {
+    const el = document.getElementById(cfg.canvas);
+    if (!el) continue;
+    const dados = infl[cfg.var];
+    const features = Object.keys(NOMES_PREDITORES);
+    new Chart(el, {
+      type: "bar",
+      data: {
+        labels: features.map(f => NOMES_PREDITORES[f]),
+        datasets: Object.keys(dados).map(lead => ({
+          label: `+${lead} meses`,
+          data: features.map(f => dados[lead][f]),
+          backgroundColor: coresLead[lead] || "#888",
+        })),
+      },
+      options: {
+        plugins: { title: { display: true, text: cfg.titulo } },
+        scales: { x: { ticks: { font: { size: 10 } } } },
+      },
+    });
+  }
+}
+
+function mediaMovel(valores, janela) {
+  return valores.map((_, i) => {
+    if (i < janela - 1) return null;
+    const fatia = valores.slice(i - janela + 1, i + 1);
+    return fatia.reduce((a, b) => a + b, 0) / janela;
+  });
+}
+
+function renderAnual(anual) {
+  const el = document.getElementById("grafico-anual");
+  if (!el) return;
+  const taxa = anual.taxa_aquecimento_decada;
+  const total = (taxa * (anual.anos.at(-1) - anual.taxa_desde) / 10).toFixed(1);
+  document.getElementById("aquecimento-texto").innerHTML =
+    `A temperatura média anual no ponto da RMSP sobe <strong>${taxa.toFixed(2).replace(".", ",")} °C por década</strong>
+     desde ${anual.taxa_desde} (≈ ${String(total).replace(".", ",")} °C acumulados) — a linha escura é a média móvel
+     de 10 anos, que filtra o sobe-e-desce de El Niño/La Niña e deixa a tendência à mostra.
+     É este sinal que o termo "tendência" do modelo captura, e é ele que inclina as previsões
+     longas de temperatura para "acima do normal".`;
+  new Chart(el, {
+    type: "line",
+    data: {
+      labels: anual.anos,
+      datasets: [
+        { label: "Temperatura média anual", data: anual.temp, borderColor: "rgba(224,123,57,.45)",
+          borderWidth: 1.5, pointRadius: 0, fill: false },
+        { label: "Média móvel 10 anos", data: mediaMovel(anual.temp, 10), borderColor: "#c0392b",
+          borderWidth: 2.5, pointRadius: 0, fill: false },
+      ],
+    },
+    options: {
+      plugins: { title: { display: true, text: "Temperatura média anual — RMSP (ERA5, 1940–presente)" } },
+      scales: { x: { ticks: { maxTicksLimit: 12 } }, y: { title: { display: true, text: "°C" } } },
+      interaction: { mode: "index", intersect: false },
+    },
+  });
 }
 
 function renderPrevisao(prev) {
@@ -209,11 +309,12 @@ function renderMeta(meta) {
 
 (async () => {
   try {
-    const [prev, mensal, skill, indices, meta] = await Promise.all(
-      ["previsao", "mensal", "skill", "indices", "meta"].map(carregar));
+    const [prev, mensal, infl, anual, skill, indices, meta] = await Promise.all(
+      ["previsao", "mensal", "influencias", "anual", "skill", "indices", "meta"].map(carregar));
     // cada bloco isolado: a falha de um não derruba os demais
     const blocos = [
-      [renderMensal, mensal], [renderPrevisao, prev], [renderSkill, skill],
+      [renderMensal, mensal], [ligarSeletor, mensal], [renderInfluencias, infl],
+      [renderAnual, anual], [renderPrevisao, prev], [renderSkill, skill],
       [renderIndices, indices], [renderMeta, meta],
     ];
     for (const [fn, dados] of blocos) {
