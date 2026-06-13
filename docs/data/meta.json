@@ -1,0 +1,17 @@
+{
+  "gerado_em": "2026-06-13T01:05:30+00:00",
+  "periodo_treino": "1979-presente",
+  "climatologia": "1991-2020",
+  "fonte_alvo": "ERA5 via Open-Meteo Archive API",
+  "coordenadas": {
+    "lat": -23.5,
+    "lon": -46.62
+  },
+  "defasagens_indices_meses": {
+    "oni": 3,
+    "tsa": 6,
+    "dmi": 14,
+    "aao": 1
+  },
+  "n_hindcast": 4404
+}
