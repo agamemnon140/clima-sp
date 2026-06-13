@@ -70,7 +70,15 @@ def build() -> None:
             feats = predictors.loc[t_init]
             if feats.isna().any():
                 continue
+            # persistência: última estação de 3 meses totalmente observada na
+            # inicialização (a que começa em t_init-3 → meses t_init-3..t_init-1)
+            t_persist = t_init - 3
+            if t_persist not in seasons.index:
+                continue
             for var in config.VARIABLES:
+                persist = seasons.loc[t_persist, f"anom_{var}"]
+                if pd.isna(persist):
+                    continue
                 rows.append({
                     "var": var,
                     "lead": lead,
@@ -81,6 +89,7 @@ def build() -> None:
                     "season": season["season"],
                     **feats.to_dict(),
                     "trend": init_year + (init_month - 0.5) / 12,
+                    "persist": float(persist),
                     "anomaly": season[f"anom_{var}"],
                 })
     dataset = pd.DataFrame(rows)

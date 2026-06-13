@@ -35,7 +35,17 @@ def run() -> dict:
     t_init = today.year * 12 + today.month
     feats, lags = latest_predictors(t_init)
     feats["trend"] = today.year + (today.month - 0.5) / 12
-    X_new = pd.DataFrame([feats])[config.FEATURES]
+
+    # persistência: anomalia da última estação totalmente observada (por variável)
+    seasons = build_dataset.seasonal_target()
+    seasons = seasons.set_index(seasons["season_year"] * 12 + seasons["season_month"])
+    t_persist = t_init - 3
+    persist = {var: float(seasons.loc[t_persist, f"anom_{var}"])
+               for var in config.VARIABLES} if t_persist in seasons.index else \
+              {var: 0.0 for var in config.VARIABLES}
+
+    def x_new(var):
+        return pd.DataFrame([{**feats, "persist": persist[var]}])[config.FEATURES]
 
     dataset = pd.read_csv(config.PROCESSED_DIR / "dataset.csv")
     clim = season_climatology()
@@ -52,9 +62,9 @@ def run() -> dict:
             thr = model.tercile_thresholds(grp["anomaly"])
             y_cat = model.categorize(grp["anomaly"], thr)
             clf = model.fit_tercile_model(grp[config.FEATURES], y_cat)
-            probs = model.predict_probs(clf, X_new)[0]
+            probs = model.predict_probs(clf, x_new(var))[0]
             reg = model.fit_anomaly_model(grp[config.FEATURES], grp["anomaly"])
-            anom = float(reg.predict(X_new)[0])
+            anom = float(reg.predict(x_new(var))[0])
             clim_val = float(clim.loc[season_month, var])
             variaveis[var] = {
                 "p_abaixo": round(float(probs[0]), 3),

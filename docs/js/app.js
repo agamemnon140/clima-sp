@@ -153,7 +153,77 @@ const NOMES_PREDITORES = {
   dmi: "DMI (Índico)",
   aao: "AAO (Antártica)",
   trend: "Tendência (aquecimento)",
+  persist: "Persistência (mês recente)",
 };
+
+const URL_CURTO_PRAZO =
+  "https://api.open-meteo.com/v1/forecast?latitude=-23.5&longitude=-46.62" +
+  "&daily=temperature_2m_mean,precipitation_sum&forecast_days=16&timezone=America%2FSao_Paulo";
+
+async function renderCurtoPrazo() {
+  const el = document.getElementById("grafico-curto");
+  if (!el) return;
+  const status = document.getElementById("curto-status");
+  let dados;
+  try {
+    const resp = await fetch(URL_CURTO_PRAZO, { cache: "no-store" });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    dados = (await resp.json()).daily;
+  } catch (err) {
+    if (status) status.textContent =
+      "Não foi possível carregar a previsão de 16 dias agora (sem rede?). " + err.message;
+    return;
+  }
+  const labels = dados.time.map(d => {
+    const [, m, dia] = d.split("-");
+    return `${dia}/${m}`;
+  });
+  if (status) status.textContent = "Atualizado agora, ao abrir a página · fonte: Open-Meteo";
+
+  new Chart(el, {
+    data: {
+      labels,
+      datasets: [
+        { type: "bar", label: "Chuva (mm/dia)", data: dados.precipitation_sum,
+          backgroundColor: "#1c5d99", yAxisID: "y", order: 2 },
+        { type: "line", label: "Temperatura média (°C)", data: dados.temperature_2m_mean,
+          borderColor: "#e07b39", borderWidth: 2, pointRadius: 2, yAxisID: "y1", order: 1 },
+      ],
+    },
+    options: {
+      plugins: { title: { display: true, text: "Previsão diária — próximos 16 dias (RMSP)" } },
+      scales: {
+        y: { position: "left", title: { display: true, text: "mm" }, beginAtZero: true },
+        y1: { position: "right", title: { display: true, text: "°C" },
+              grid: { drawOnChartArea: false } },
+      },
+      interaction: { mode: "index", intersect: false },
+    },
+  });
+}
+
+function renderLog(log) {
+  const el = document.getElementById("tabela-log");
+  if (!el || !log.length) return;
+  const sinal = v => (v >= 0 ? "+" : "") + v;
+  const fmtData = iso => new Date(iso).toLocaleDateString("pt-BR");
+  const linhas = log.map(e => {
+    const r = e.resumo;
+    const cls = e.enso === "Neutro" ? "enso-neutro" : (e.enso === "El Niño" ? "enso-nino" : "enso-nina");
+    const tend = (r.chuva.p_acima > r.chuva.p_abaixo) ? "chuva ↑" : "chuva ↓";
+    return `<tr>
+      <td>${fmtMes(e.mes)}</td>
+      <td>${sinal(e.indices.oni)}</td><td>${sinal(e.indices.tsa)}</td>
+      <td>${sinal(e.indices.dmi)}</td><td>${sinal(e.indices.aao)}</td>
+      <td><span class="estado-enso ${cls}">${e.enso}</span></td>
+      <td>${r.estacao}: ${tend}, temp ${r.temperatura.p_acima > r.temperatura.p_abaixo ? "↑" : "↓"}</td>
+      <td class="quando">${fmtData(e.gerado_em)}</td>
+    </tr>`;
+  }).join("");
+  el.innerHTML = `<table class="log"><tr>
+    <th>Inicialização</th><th>ONI</th><th>TSA</th><th>DMI</th><th>AAO</th>
+    <th>ENSO</th><th>Previsão (lead 3m)</th><th>Capturado em</th></tr>${linhas}</table>`;
+}
 
 function renderInfluencias(infl) {
   const cfgs = [
@@ -338,17 +408,19 @@ function renderMeta(meta) {
 
 (async () => {
   try {
-    const [prev, mensal, infl, anual, skill, indices, meta] = await Promise.all(
-      ["previsao", "mensal", "influencias", "anual", "skill", "indices", "meta"].map(carregar));
+    const [prev, mensal, infl, anual, skill, indices, meta, log] = await Promise.all(
+      ["previsao", "mensal", "influencias", "anual", "skill", "indices", "meta", "log"].map(carregar));
     // cada bloco isolado: a falha de um não derruba os demais
     const blocos = [
       [renderMensal, mensal], [ligarSeletores, mensal], [renderInfluencias, infl],
       [renderAnual, anual], [renderPrevisao, prev], [renderSkill, skill],
-      [renderIndices, indices], [renderMeta, meta],
+      [renderIndices, indices], [renderMeta, meta], [renderLog, log],
     ];
     for (const [fn, dados] of blocos) {
       try { fn(dados); } catch (err) { console.error(fn.name, err); }
     }
+    // painel ao vivo, independente dos JSONs publicados
+    renderCurtoPrazo();
   } catch (err) {
     document.getElementById("previsao-intro").textContent =
       "Erro ao carregar os dados do dashboard: " + err.message;

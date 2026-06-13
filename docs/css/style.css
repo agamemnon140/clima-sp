@@ -26,6 +26,7 @@ header {
   padding: 2.2rem 1.5rem 1.6rem;
   text-align: center;
 }
+header .logo { display: block; margin: 0 auto .4rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
 header h1 { margin: 0 0 .3rem; font-size: 2rem; }
 .subtitulo { margin: 0; opacity: .9; }
 .atualizacao { margin: .6rem 0 0; font-size: .85rem; opacity: .75; }
@@ -98,6 +99,14 @@ tr:nth-child(even) { background: #eef3f8; }
 .enso-nina { background: var(--azul); }
 
 .oficiais li { margin: .6rem 0; }
+
+.atualizacao-curto { font-size: .82rem; color: var(--laranja); font-weight: 600; margin: 0 0 .6rem; }
+
+table.log { width: 100%; font-size: .82rem; }
+table.log td.quando { color: var(--cinza); font-size: .78rem; }
+table.log td:nth-child(2), table.log td:nth-child(3),
+table.log td:nth-child(4), table.log td:nth-child(5) { font-variant-numeric: tabular-nums; }
+.log-wrap { overflow-x: auto; }
 
 details { background: var(--card); border-radius: 8px; padding: .6rem 1rem; margin: .6rem 0; }
 summary { cursor: pointer; font-weight: 600; color: var(--azul-escuro); }

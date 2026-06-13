@@ -35,7 +35,10 @@ def run() -> dict:
     t_init = today.year * 12 + today.month
     feats, _ = forecast.latest_predictors(t_init)
     feats["trend"] = today.year + (today.month - 0.5) / 12
-    X_new = pd.DataFrame([feats])[config.FEATURES]
+
+    # persistência mensal: anomalia observada de cada variável por mês (t = ano*12+mês)
+    anom_by_t = {var: monthly.set_index("t")[f"anom_{var}"] for var in config.VARIABLES}
+    indices_cols = list(predictors.columns)  # oni/tsa/dmi/aao
 
     previsao = []
     for lead in MONTHLY_LEADS:
@@ -48,22 +51,28 @@ def run() -> dict:
         grp["t_init"] = grp["t"] - lead
         grp["init_year"] = (grp["t_init"] - 1) // 12
         grp = grp[grp["init_year"] >= config.TRAIN_START_YEAR]
-        grp = grp.join(predictors, on="t_init").dropna(subset=config.FEATURES[:-1])
+        grp = grp.join(predictors, on="t_init").dropna(subset=indices_cols)
         grp["trend"] = grp["init_year"] + (((grp["t_init"] - 1) % 12 + 1) - 0.5) / 12
 
         entry = {"mes": f"{target_year}-{target_month:02d}", "lead": lead}
         for var in config.VARIABLES:
-            y = grp[f"anom_{var}"]
+            # persistência = anomalia da variável no mês anterior à inicialização
+            g = grp.copy()
+            g["persist"] = (g["t_init"] - 1).map(anom_by_t[var])
+            g = g.dropna(subset=["persist"])
+            x_new = pd.DataFrame([{**feats,
+                                   "persist": float(anom_by_t[var].get(t_init - 1, 0.0))}])[config.FEATURES]
+            y = g[f"anom_{var}"]
             residuos = []
-            for yr in grp["year"].unique():
-                tr = grp[grp["year"] != yr]
-                te = grp[grp["year"] == yr]
+            for yr in g["year"].unique():
+                tr = g[g["year"] != yr]
+                te = g[g["year"] == yr]
                 reg = model.fit_anomaly_model(tr[config.FEATURES], tr[f"anom_{var}"])
                 residuos.extend(te[f"anom_{var}"].to_numpy()
                                 - reg.predict(te[config.FEATURES]))
             sigma = float(np.std(residuos))
-            reg = model.fit_anomaly_model(grp[config.FEATURES], y)
-            anom = float(reg.predict(X_new)[0])
+            reg = model.fit_anomaly_model(g[config.FEATURES], y)
+            anom = float(reg.predict(x_new)[0])
             clim_val = float(clim.loc[target_month, var])
             esperado = clim_val + anom
             if var == "precipitacao":

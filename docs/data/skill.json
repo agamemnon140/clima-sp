@@ -2,57 +2,57 @@
   {
     "var": "precipitacao",
     "lead": 3,
-    "rpss": 0.0185,
-    "hit_rate": 0.3935,
+    "rpss": 0.0156,
+    "hit_rate": 0.3899,
     "n": 554
   },
   {
     "var": "precipitacao",
     "lead": 6,
-    "rpss": 0.0185,
-    "hit_rate": 0.3628,
+    "rpss": 0.0091,
+    "hit_rate": 0.3394,
     "n": 554
   },
   {
     "var": "precipitacao",
     "lead": 12,
-    "rpss": 0.0157,
-    "hit_rate": 0.3816,
+    "rpss": 0.0093,
+    "hit_rate": 0.3599,
     "n": 553
   },
   {
     "var": "precipitacao",
     "lead": 24,
-    "rpss": 0.0195,
-    "hit_rate": 0.3863,
+    "rpss": 0.0167,
+    "hit_rate": 0.3937,
     "n": 541
   },
   {
     "var": "temperatura",
     "lead": 3,
-    "rpss": 0.0368,
-    "hit_rate": 0.4188,
+    "rpss": 0.0392,
+    "hit_rate": 0.3845,
     "n": 554
   },
   {
     "var": "temperatura",
     "lead": 6,
-    "rpss": 0.012,
-    "hit_rate": 0.3538,
+    "rpss": 0.0132,
+    "hit_rate": 0.3646,
     "n": 554
   },
   {
     "var": "temperatura",
     "lead": 12,
-    "rpss": -0.0136,
-    "hit_rate": 0.3309,
+    "rpss": -0.0186,
+    "hit_rate": 0.3201,
     "n": 553
   },
   {
     "var": "temperatura",
     "lead": 24,
-    "rpss": 0.0117,
-    "hit_rate": 0.3623,
+    "rpss": 0.0166,
+    "hit_rate": 0.3826,
     "n": 541
   }
 ]

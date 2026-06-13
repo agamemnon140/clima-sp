@@ -5,12 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>clima-sp — Previsão climática sazonal para a RMSP</title>
   <meta name="description" content="Previsão probabilística de chuva e temperatura para a Região Metropolitana de São Paulo em 3, 6, 12 e 24 meses, com validação honesta da habilidade do modelo.">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <meta name="theme-color" content="#1c5d99">
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="clima-sp">
+  <link rel="stylesheet" href="css/style.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <header>
-  <h1>🌦️ clima-sp</h1>
+  <img src="logo.svg" alt="" class="logo" width="72" height="72">
+  <h1>clima-sp</h1>
   <p class="subtitulo">Previsão climática sazonal probabilística para a Região Metropolitana de São Paulo</p>
   <p id="atualizacao" class="atualizacao"></p>
 </header>
@@ -23,6 +32,17 @@
     A habilidade é modesta em 3 meses, marginal em 6 e, em 12–24 meses, a previsão é
     essencialmente climatologia + tendência de aquecimento. A seção
     <a href="#skill">Habilidade do modelo</a> mostra os números reais, sem maquiagem.
+  </section>
+
+  <section>
+    <h2>🌤️ Próximos 16 dias (previsão do tempo)</h2>
+    <p>Para a janela curta, previsão meteorológica tem habilidade real — bem melhor que
+       qualquer modelo sazonal. Estes dados vêm <strong>ao vivo</strong> do Open-Meteo (modelo
+       numérico ECMWF/GFS) e são atualizados toda vez que você abre a página. A confiança é
+       alta nos primeiros ~7 dias e cai gradualmente até ~14; além disso, use o modelo
+       sazonal abaixo. É a forma honesta de "reduzir a incerteza" no curtíssimo prazo.</p>
+    <p id="curto-status" class="atualizacao-curto"></p>
+    <div class="grafico grafico-grande"><canvas id="grafico-curto"></canvas></div>
   </section>
 
   <section>
@@ -119,6 +139,15 @@
   </section>
 
   <section>
+    <h2>📜 Registro de atualizações</h2>
+    <p>O robô do projeto roda automaticamente <strong>todo dia 5 de cada mês</strong> (GitHub
+       Actions): baixa os índices mais recentes, refaz a previsão e registra aqui o que capturou.
+       Os valores são as médias de 3 meses usadas pelo modelo. A próxima execução automática
+       é <strong>5 de julho de 2026</strong>.</p>
+    <div id="tabela-log"></div>
+  </section>
+
+  <section>
     <h2>🔬 Metodologia e limitações</h2>
     <details>
       <summary>Como o modelo funciona</summary>
@@ -127,8 +156,11 @@
             móveis (JFM, FMA, …, DJF) para o ponto -23,5°S -46,6°O (RMSP), série ERA5 desde 1940
             via Open-Meteo. Climatologia de referência: 1991–2020.</li>
         <li><strong>Preditores:</strong> ONI (ENSO), TSA (Atlântico Sul tropical), DMI (Dipolo do Índico),
-            AAO (Oscilação Antártica) — médias dos 3 meses anteriores à inicialização — e um termo de
-            tendência linear que captura o aquecimento de longo prazo.</li>
+            AAO (Oscilação Antártica) — médias dos 3 meses anteriores à inicialização — um termo de
+            tendência linear que captura o aquecimento de longo prazo, e a persistência (anomalia
+            recente observada da própria variável). A persistência ajuda mais a temperatura no
+            horizonte curto; na chuva o efeito é pequeno — por isso, para o curtíssimo prazo, a
+            previsão de 16 dias no topo da página é muito mais informativa.</li>
         <li><strong>Método:</strong> regressão logística multinomial regularizada (probabilidades dos tercis)
             e regressão Ridge (anomalia pontual), um modelo por variável × horizonte × estação do ano.
             As probabilidades são encolhidas em direção à climatologia para evitar superconfiança.</li>
@@ -165,6 +197,6 @@
      as previsões oficiais do INMET e do CPTEC/INPE.</p>
 </footer>
 
-<script src="js/app.js?v=5"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

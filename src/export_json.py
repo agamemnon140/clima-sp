@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-from . import build_dataset, config, forecast, model, monthly
+from . import build_dataset, config, forecast, model, monthly, registro
 
 
 def _write(name: str, obj) -> None:
@@ -108,6 +108,7 @@ def export_all() -> None:
     export_skill()
     export_indices()
     export_meta(result)
+    registro.atualizar(result)
 
 
 if __name__ == "__main__":
