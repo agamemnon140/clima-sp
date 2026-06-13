@@ -73,6 +73,11 @@ h2 { color: var(--azul-escuro); border-bottom: 2px solid #d7e3ee; padding-bottom
   padding: .25em .9em; margin-left: .35em; cursor: pointer; font-size: .85rem; color: var(--azul-escuro);
 }
 .seletor button.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+.seletor.desativado { opacity: .4; pointer-events: none; }
+.seletor select {
+  border: 1px solid #c6d4e0; border-radius: 999px; padding: .25em .8em;
+  margin-left: .35em; font-size: .85rem; color: var(--azul-escuro); background: var(--card); cursor: pointer;
+}
 
 table { border-collapse: collapse; margin-top: 1rem; background: var(--card); border-radius: 8px; overflow: hidden; }
 th, td { padding: .45rem .9rem; text-align: center; font-size: .9rem; }

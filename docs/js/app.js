@@ -31,26 +31,41 @@ function barraProbs(v) {
 
 const chartsMensais = {};
 
-function renderMensal(mensal, anosHistorico = 2) {
-  // recorte do histórico conforme o seletor (0 = série completa desde 1940)
-  const corte = anosHistorico > 0 ? anosHistorico * 12 : mensal.historico.meses.length;
-  const hist = {
-    meses: mensal.historico.meses.slice(-corte),
-    precipitacao: mensal.historico.precipitacao.slice(-corte),
-    temperatura: mensal.historico.temperatura.slice(-corte),
-    climatologia: {
-      precipitacao: mensal.historico.climatologia.precipitacao.slice(-corte),
-      temperatura: mensal.historico.climatologia.temperatura.slice(-corte),
-    },
-  };
-  const prev = mensal.previsao;
-  const labels = [...hist.meses, ...prev.map(p => p.mes)].map(fmtMes);
-  const nHist = hist.meses.length;
+const NOMES_MES = ["", "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+                   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+// Reduz histórico e previsão a uma lista uniforme de pontos {rotulo, var → valores}.
+// modo "continuo": recorta os últimos N anos. modo "mes": só o mês escolhido, 1 ponto/ano.
+function pontosHistorico(mensal, { anos, mes }) {
+  const h = mensal.historico;
+  let idx = h.meses.map((_, i) => i);
+  if (mes) idx = idx.filter(i => h.meses[i].endsWith("-" + mes));
+  else if (anos > 0) idx = idx.slice(-anos * 12);
+  return idx.map(i => ({
+    rotulo: mes ? h.meses[i].slice(0, 4) : fmtMes(h.meses[i]),
+    precipitacao: h.precipitacao[i],
+    temperatura: h.temperatura[i],
+    clim: { precipitacao: h.climatologia.precipitacao[i], temperatura: h.climatologia.temperatura[i] },
+  }));
+}
+
+function pontosPrevisao(mensal, { mes }) {
+  let p = mensal.previsao;
+  if (mes) p = p.filter(e => e.mes.endsWith("-" + mes));
+  return p.map(e => ({ rotulo: mes ? e.mes.slice(0, 4) : fmtMes(e.mes), ...e }));
+}
+
+function renderMensal(mensal, { anos = 2, mes = null } = {}) {
+  const hp = pontosHistorico(mensal, { anos, mes });
+  const pp = pontosPrevisao(mensal, { mes });
+  const labels = [...hp.map(x => x.rotulo), ...pp.map(x => x.rotulo)];
+  const nHist = hp.length;
+  const ptRaio = mes ? 3 : 0; // no modo mês há poucos pontos: mostra os marcadores
 
   const configVar = {
-    precipitacao: { canvas: "grafico-chuva", titulo: "Chuva mensal (mm)", cor: "#1c5d99",
+    precipitacao: { canvas: "grafico-chuva", base: "Chuva (mm)", cor: "#1c5d99",
                     banda: "rgba(28, 93, 153, .18)", minY: 0 },
-    temperatura: { canvas: "grafico-temp", titulo: "Temperatura média mensal (°C)", cor: "#e07b39",
+    temperatura: { canvas: "grafico-temp", base: "Temperatura média (°C)", cor: "#e07b39",
                    banda: "rgba(224, 123, 57, .18)", minY: null },
   };
 
@@ -58,21 +73,25 @@ function renderMensal(mensal, anosHistorico = 2) {
     if (!document.getElementById(cfg.canvas)) continue; // HTML antigo em cache
     if (chartsMensais[cfg.canvas]) chartsMensais[cfg.canvas].destroy();
     // séries com null fora do seu trecho; previsão começa colada no último observado
-    const observado = [...hist[varName], ...prev.map(() => null)];
+    const observado = [...hp.map(x => x[varName]), ...pp.map(() => null)];
     const esperado = labels.map(() => null);
     const sup = labels.map(() => null);
     const inf = labels.map(() => null);
-    esperado[nHist - 1] = hist[varName][nHist - 1];
-    prev.forEach((p, i) => {
+    if (nHist > 0) esperado[nHist - 1] = hp[nHist - 1][varName];
+    pp.forEach((p, i) => {
       const v = p[varName];
       esperado[nHist + i] = v.esperado;
       sup[nHist + i] = v.esperado + v.sigma;
       inf[nHist + i] = Math.max(v.esperado - v.sigma, cfg.minY ?? -Infinity);
     });
     const climatologia = [
-      ...hist.climatologia[varName],
-      ...prev.map(p => p[varName].climatologia),
+      ...hp.map(x => x.clim[varName]),
+      ...pp.map(p => p[varName].climatologia),
     ];
+
+    const titulo = mes
+      ? `${cfg.base} — só ${NOMES_MES[Number(mes)]}, ano a ano`
+      : `${cfg.base} mensal`;
 
     chartsMensais[cfg.canvas] = new Chart(document.getElementById(cfg.canvas), {
       type: "line",
@@ -80,9 +99,9 @@ function renderMensal(mensal, anosHistorico = 2) {
         labels,
         datasets: [
           { label: "Observado", data: observado, borderColor: cfg.cor,
-            borderWidth: 2, pointRadius: 0, fill: false },
+            borderWidth: 2, pointRadius: ptRaio, fill: false },
           { label: "Esperado (modelo)", data: esperado, borderColor: cfg.cor,
-            borderDash: [6, 4], borderWidth: 2, pointRadius: 0, fill: false },
+            borderDash: [6, 4], borderWidth: 2, pointRadius: ptRaio, fill: false },
           { label: "+1σ", data: sup, borderWidth: 0, pointRadius: 0, fill: false },
           { label: "Faixa ±1σ", data: inf, borderWidth: 0, pointRadius: 0,
             backgroundColor: cfg.banda, fill: "-1" },
@@ -92,7 +111,7 @@ function renderMensal(mensal, anosHistorico = 2) {
       },
       options: {
         plugins: {
-          title: { display: true, text: cfg.titulo },
+          title: { display: true, text: titulo },
           legend: { labels: { filter: item => item.text !== "+1σ" } },
           tooltip: { filter: item => item.dataset.label !== "+1σ" },
         },
@@ -106,15 +125,25 @@ function renderMensal(mensal, anosHistorico = 2) {
   }
 }
 
-function ligarSeletor(mensal) {
-  const seletor = document.getElementById("seletor-anos");
-  if (!seletor) return;
-  seletor.querySelectorAll("button").forEach(btn => {
+function ligarSeletores(mensal) {
+  const estado = { anos: 2, mes: null };
+  const seletorAnos = document.getElementById("seletor-anos");
+  const seletorMes = document.getElementById("seletor-mes");
+  const atualizar = () => {
+    renderMensal(mensal, { anos: estado.anos, mes: estado.mes });
+    if (seletorAnos) seletorAnos.classList.toggle("desativado", !!estado.mes);
+  };
+  seletorAnos?.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
-      seletor.querySelectorAll("button").forEach(b => b.classList.remove("ativo"));
+      seletorAnos.querySelectorAll("button").forEach(b => b.classList.remove("ativo"));
       btn.classList.add("ativo");
-      renderMensal(mensal, Number(btn.dataset.anos));
+      estado.anos = Number(btn.dataset.anos);
+      atualizar();
     });
+  });
+  seletorMes?.addEventListener("change", () => {
+    estado.mes = seletorMes.value || null;
+    atualizar();
   });
 }
 
@@ -313,7 +342,7 @@ function renderMeta(meta) {
       ["previsao", "mensal", "influencias", "anual", "skill", "indices", "meta"].map(carregar));
     // cada bloco isolado: a falha de um não derruba os demais
     const blocos = [
-      [renderMensal, mensal], [ligarSeletor, mensal], [renderInfluencias, infl],
+      [renderMensal, mensal], [ligarSeletores, mensal], [renderInfluencias, infl],
       [renderAnual, anual], [renderPrevisao, prev], [renderSkill, skill],
       [renderIndices, indices], [renderMeta, meta],
     ];
