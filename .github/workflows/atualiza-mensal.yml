@@ -1,0 +1,39 @@
+name: Atualização mensal
+
+on:
+  schedule:
+    # dia 5 de cada mês, 09:00 UTC — índices do mês anterior já publicados
+    - cron: "0 9 5 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Rodar pipeline completo
+        run: python -m src.run_all
+
+      - name: Commit e push se houver mudanças
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data docs/data
+          if git diff --cached --quiet; then
+            echo "sem mudanças neste mês"
+          else
+            git commit -m "Atualização automática mensal ($(date -u +%Y-%m-%d))"
+            git push
+          fi
