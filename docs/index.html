@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>clima-sp — Previsão climática sazonal para a RMSP</title>
   <meta name="description" content="Previsão probabilística de chuva e temperatura para a Região Metropolitana de São Paulo em 3, 6, 12 e 24 meses, com validação honesta da habilidade do modelo.">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -40,6 +40,24 @@
       <button data-anos="10">10 anos</button>
       <button data-anos="30">30 anos</button>
       <button data-anos="0">tudo (1940)</button>
+    </div>
+    <div class="seletor">
+      <span>Comparar um mês entre os anos:</span>
+      <select id="seletor-mes">
+        <option value="">— série contínua —</option>
+        <option value="01">Janeiro</option>
+        <option value="02">Fevereiro</option>
+        <option value="03">Março</option>
+        <option value="04">Abril</option>
+        <option value="05">Maio</option>
+        <option value="06">Junho</option>
+        <option value="07">Julho</option>
+        <option value="08">Agosto</option>
+        <option value="09">Setembro</option>
+        <option value="10">Outubro</option>
+        <option value="11">Novembro</option>
+        <option value="12">Dezembro</option>
+      </select>
     </div>
     <div class="grafico grafico-grande"><canvas id="grafico-chuva"></canvas></div>
     <div class="grafico grafico-grande"><canvas id="grafico-temp"></canvas></div>
@@ -147,6 +165,6 @@
      as previsões oficiais do INMET e do CPTEC/INPE.</p>
 </footer>
 
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>
