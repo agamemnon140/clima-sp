@@ -26,7 +26,19 @@
   </section>
 
   <section>
-    <h2>📅 Previsão atual</h2>
+    <h2>📈 Próximos 24 meses, mês a mês</h2>
+    <p><strong>Como ler:</strong> a linha azul cheia é o que foi <em>observado</em> nos últimos
+       24 meses; a linha tracejada é o valor <em>esperado</em> pelo modelo para os próximos 24;
+       a faixa sombreada é a incerteza de ±1 desvio padrão (≈68% dos casos devem cair dentro dela);
+       a linha cinza pontilhada é a normal climatológica 1991–2020 de cada mês.
+       Repare que a faixa é larga e o esperado gruda na normal conforme o horizonte avança —
+       esse é o limite físico da previsibilidade, não um defeito do modelo.</p>
+    <div class="grafico grafico-grande"><canvas id="grafico-chuva"></canvas></div>
+    <div class="grafico grafico-grande"><canvas id="grafico-temp"></canvas></div>
+  </section>
+
+  <section>
+    <h2>📅 Previsão por trimestre (probabilidades)</h2>
     <p id="previsao-intro"></p>
     <div id="cards-previsao" class="cards"></div>
   </section>

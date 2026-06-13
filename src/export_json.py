@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from . import build_dataset, config, forecast
+from . import build_dataset, config, forecast, monthly
 
 
 def _write(name: str, obj) -> None:
@@ -55,9 +55,14 @@ def export_meta(forecast_result: dict) -> None:
     _write("meta.json", meta)
 
 
+def export_mensal() -> None:
+    _write("mensal.json", monthly.run())
+
+
 def export_all() -> None:
     result = forecast.run()
     export_previsao(result)
+    export_mensal()
     export_skill()
     export_indices()
     export_meta(result)

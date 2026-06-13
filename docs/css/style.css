@@ -65,6 +65,7 @@ h2 { color: var(--azul-escuro); border-bottom: 2px solid #d7e3ee; padding-bottom
 .legenda i { display: inline-block; width: .8em; height: .8em; border-radius: 2px; margin: 0 .25em 0 .8em; }
 
 .grafico { background: var(--card); border-radius: 10px; padding: 1rem; max-width: 720px; }
+.grafico-grande { max-width: 100%; margin-bottom: 1rem; }
 
 table { border-collapse: collapse; margin-top: 1rem; background: var(--card); border-radius: 8px; overflow: hidden; }
 th, td { padding: .45rem .9rem; text-align: center; font-size: .9rem; }

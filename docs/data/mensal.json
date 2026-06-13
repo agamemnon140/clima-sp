@@ -1,0 +1,488 @@
+{
+  "historico": {
+    "meses": [
+      "2024-06",
+      "2024-07",
+      "2024-08",
+      "2024-09",
+      "2024-10",
+      "2024-11",
+      "2024-12",
+      "2025-01",
+      "2025-02",
+      "2025-03",
+      "2025-04",
+      "2025-05",
+      "2025-06",
+      "2025-07",
+      "2025-08",
+      "2025-09",
+      "2025-10",
+      "2025-11",
+      "2025-12",
+      "2026-01",
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05"
+    ],
+    "precipitacao": [
+      6.0,
+      36.9,
+      58.2,
+      14.3,
+      91.3,
+      199.4,
+      235.5,
+      307.9,
+      123.9,
+      115.5,
+      139.2,
+      24.5,
+      49.0,
+      10.5,
+      29.4,
+      18.3,
+      150.8,
+      154.2,
+      162.1,
+      282.0,
+      280.9,
+      171.1,
+      110.6,
+      98.0
+    ],
+    "temperatura": [
+      18.23,
+      16.23,
+      17.01,
+      21.78,
+      19.96,
+      21.24,
+      22.19,
+      22.71,
+      24.6,
+      22.81,
+      19.98,
+      18.92,
+      16.88,
+      15.56,
+      17.29,
+      19.27,
+      19.26,
+      20.24,
+      23.69,
+      21.85,
+      22.49,
+      21.85,
+      21.3,
+      18.14
+    ],
+    "climatologia": {
+      "precipitacao": [
+        46.9,
+        54.9,
+        38.4,
+        89.4,
+        114.7,
+        150.0,
+        178.6,
+        234.5,
+        180.6,
+        151.7,
+        64.2,
+        63.8,
+        46.9,
+        54.9,
+        38.4,
+        89.4,
+        114.7,
+        150.0,
+        178.6,
+        234.5,
+        180.6,
+        151.7,
+        64.2,
+        63.8
+      ],
+      "temperatura": [
+        16.71,
+        16.33,
+        17.3,
+        18.74,
+        19.97,
+        20.27,
+        21.64,
+        22.21,
+        22.43,
+        21.48,
+        20.11,
+        17.59,
+        16.71,
+        16.33,
+        17.3,
+        18.74,
+        19.97,
+        20.27,
+        21.64,
+        22.21,
+        22.43,
+        21.48,
+        20.11,
+        17.59
+      ]
+    }
+  },
+  "previsao": [
+    {
+      "mes": "2026-06",
+      "lead": 0,
+      "precipitacao": {
+        "esperado": 52.2,
+        "sigma": 49.5,
+        "climatologia": 46.9
+      },
+      "temperatura": {
+        "esperado": 16.99,
+        "sigma": 1.17,
+        "climatologia": 16.71
+      }
+    },
+    {
+      "mes": "2026-07",
+      "lead": 1,
+      "precipitacao": {
+        "esperado": 53.8,
+        "sigma": 46.3,
+        "climatologia": 54.9
+      },
+      "temperatura": {
+        "esperado": 16.44,
+        "sigma": 1.14,
+        "climatologia": 16.33
+      }
+    },
+    {
+      "mes": "2026-08",
+      "lead": 2,
+      "precipitacao": {
+        "esperado": 27.3,
+        "sigma": 30.8,
+        "climatologia": 38.4
+      },
+      "temperatura": {
+        "esperado": 17.1,
+        "sigma": 1.17,
+        "climatologia": 17.3
+      }
+    },
+    {
+      "mes": "2026-09",
+      "lead": 3,
+      "precipitacao": {
+        "esperado": 46.6,
+        "sigma": 61.8,
+        "climatologia": 89.4
+      },
+      "temperatura": {
+        "esperado": 19.73,
+        "sigma": 1.26,
+        "climatologia": 18.74
+      }
+    },
+    {
+      "mes": "2026-10",
+      "lead": 4,
+      "precipitacao": {
+        "esperado": 112.1,
+        "sigma": 53.6,
+        "climatologia": 114.7
+      },
+      "temperatura": {
+        "esperado": 20.25,
+        "sigma": 1.16,
+        "climatologia": 19.97
+      }
+    },
+    {
+      "mes": "2026-11",
+      "lead": 5,
+      "precipitacao": {
+        "esperado": 161.5,
+        "sigma": 50.4,
+        "climatologia": 150.0
+      },
+      "temperatura": {
+        "esperado": 19.93,
+        "sigma": 1.04,
+        "climatologia": 20.27
+      }
+    },
+    {
+      "mes": "2026-12",
+      "lead": 6,
+      "precipitacao": {
+        "esperado": 157.2,
+        "sigma": 63.0,
+        "climatologia": 178.6
+      },
+      "temperatura": {
+        "esperado": 21.7,
+        "sigma": 0.82,
+        "climatologia": 21.64
+      }
+    },
+    {
+      "mes": "2027-01",
+      "lead": 7,
+      "precipitacao": {
+        "esperado": 208.2,
+        "sigma": 70.2,
+        "climatologia": 234.5
+      },
+      "temperatura": {
+        "esperado": 22.23,
+        "sigma": 1.06,
+        "climatologia": 22.21
+      }
+    },
+    {
+      "mes": "2027-02",
+      "lead": 8,
+      "precipitacao": {
+        "esperado": 160.9,
+        "sigma": 77.4,
+        "climatologia": 180.6
+      },
+      "temperatura": {
+        "esperado": 22.25,
+        "sigma": 1.09,
+        "climatologia": 22.43
+      }
+    },
+    {
+      "mes": "2027-03",
+      "lead": 9,
+      "precipitacao": {
+        "esperado": 152.7,
+        "sigma": 49.2,
+        "climatologia": 151.7
+      },
+      "temperatura": {
+        "esperado": 21.64,
+        "sigma": 0.82,
+        "climatologia": 21.48
+      }
+    },
+    {
+      "mes": "2027-04",
+      "lead": 10,
+      "precipitacao": {
+        "esperado": 62.8,
+        "sigma": 41.1,
+        "climatologia": 64.2
+      },
+      "temperatura": {
+        "esperado": 19.87,
+        "sigma": 1.07,
+        "climatologia": 20.11
+      }
+    },
+    {
+      "mes": "2027-05",
+      "lead": 11,
+      "precipitacao": {
+        "esperado": 42.2,
+        "sigma": 36.6,
+        "climatologia": 63.8
+      },
+      "temperatura": {
+        "esperado": 17.5,
+        "sigma": 1.08,
+        "climatologia": 17.59
+      }
+    },
+    {
+      "mes": "2027-06",
+      "lead": 12,
+      "precipitacao": {
+        "esperado": 36.1,
+        "sigma": 51.8,
+        "climatologia": 46.9
+      },
+      "temperatura": {
+        "esperado": 17.17,
+        "sigma": 1.19,
+        "climatologia": 16.71
+      }
+    },
+    {
+      "mes": "2027-07",
+      "lead": 13,
+      "precipitacao": {
+        "esperado": 47.9,
+        "sigma": 44.7,
+        "climatologia": 54.9
+      },
+      "temperatura": {
+        "esperado": 16.72,
+        "sigma": 1.12,
+        "climatologia": 16.33
+      }
+    },
+    {
+      "mes": "2027-08",
+      "lead": 14,
+      "precipitacao": {
+        "esperado": 36.4,
+        "sigma": 30.3,
+        "climatologia": 38.4
+      },
+      "temperatura": {
+        "esperado": 17.62,
+        "sigma": 1.11,
+        "climatologia": 17.3
+      }
+    },
+    {
+      "mes": "2027-09",
+      "lead": 15,
+      "precipitacao": {
+        "esperado": 70.9,
+        "sigma": 63.6,
+        "climatologia": 89.4
+      },
+      "temperatura": {
+        "esperado": 19.78,
+        "sigma": 1.28,
+        "climatologia": 18.74
+      }
+    },
+    {
+      "mes": "2027-10",
+      "lead": 16,
+      "precipitacao": {
+        "esperado": 102.6,
+        "sigma": 52.9,
+        "climatologia": 114.7
+      },
+      "temperatura": {
+        "esperado": 20.65,
+        "sigma": 1.12,
+        "climatologia": 19.97
+      }
+    },
+    {
+      "mes": "2027-11",
+      "lead": 17,
+      "precipitacao": {
+        "esperado": 151.3,
+        "sigma": 48.7,
+        "climatologia": 150.0
+      },
+      "temperatura": {
+        "esperado": 20.48,
+        "sigma": 1.07,
+        "climatologia": 20.27
+      }
+    },
+    {
+      "mes": "2027-12",
+      "lead": 18,
+      "precipitacao": {
+        "esperado": 158.4,
+        "sigma": 60.4,
+        "climatologia": 178.6
+      },
+      "temperatura": {
+        "esperado": 21.87,
+        "sigma": 0.87,
+        "climatologia": 21.64
+      }
+    },
+    {
+      "mes": "2028-01",
+      "lead": 19,
+      "precipitacao": {
+        "esperado": 228.9,
+        "sigma": 74.9,
+        "climatologia": 234.5
+      },
+      "temperatura": {
+        "esperado": 22.34,
+        "sigma": 1.08,
+        "climatologia": 22.21
+      }
+    },
+    {
+      "mes": "2028-02",
+      "lead": 20,
+      "precipitacao": {
+        "esperado": 161.4,
+        "sigma": 79.4,
+        "climatologia": 180.6
+      },
+      "temperatura": {
+        "esperado": 22.65,
+        "sigma": 1.1,
+        "climatologia": 22.43
+      }
+    },
+    {
+      "mes": "2028-03",
+      "lead": 21,
+      "precipitacao": {
+        "esperado": 122.3,
+        "sigma": 50.5,
+        "climatologia": 151.7
+      },
+      "temperatura": {
+        "esperado": 21.82,
+        "sigma": 0.75,
+        "climatologia": 21.48
+      }
+    },
+    {
+      "mes": "2028-04",
+      "lead": 22,
+      "precipitacao": {
+        "esperado": 62.5,
+        "sigma": 40.9,
+        "climatologia": 64.2
+      },
+      "temperatura": {
+        "esperado": 19.89,
+        "sigma": 1.02,
+        "climatologia": 20.11
+      }
+    },
+    {
+      "mes": "2028-05",
+      "lead": 23,
+      "precipitacao": {
+        "esperado": 39.7,
+        "sigma": 37.5,
+        "climatologia": 63.8
+      },
+      "temperatura": {
+        "esperado": 17.87,
+        "sigma": 1.1,
+        "climatologia": 17.59
+      }
+    },
+    {
+      "mes": "2028-06",
+      "lead": 24,
+      "precipitacao": {
+        "esperado": 33.6,
+        "sigma": 53.4,
+        "climatologia": 46.9
+      },
+      "temperatura": {
+        "esperado": 17.2,
+        "sigma": 1.15,
+        "climatologia": 16.71
+      }
+    }
+  ]
+}
