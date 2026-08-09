@@ -4,48 +4,40 @@
     "descricao": "Anomalia de temperatura da superfície do mar no Pacífico equatorial central (região Niño 3.4), em °C. Acima de +0,5 por vários meses = El Niño; abaixo de -0,5 = La Niña. É o principal motor da previsibilidade sazonal: El Niño tende a verões mais quentes e chuvosos no Sudeste; La Niña, mais secos.",
     "serie": [
       {
-        "mes": "2024-05",
-        "valor": 0.49
-      },
-      {
-        "mes": "2024-06",
-        "valor": 0.22
-      },
-      {
         "mes": "2024-07",
-        "valor": 0.08
+        "valor": 0.06
       },
       {
         "mes": "2024-08",
-        "valor": -0.07
+        "valor": -0.04
       },
       {
         "mes": "2024-09",
-        "valor": -0.17
+        "valor": -0.12
       },
       {
         "mes": "2024-10",
-        "valor": -0.21
+        "valor": -0.19
       },
       {
         "mes": "2024-11",
-        "valor": -0.3
+        "valor": -0.29
       },
       {
         "mes": "2024-12",
-        "valor": -0.42
+        "valor": -0.43
       },
       {
         "mes": "2025-01",
-        "valor": -0.45
+        "valor": -0.46
       },
       {
         "mes": "2025-02",
-        "valor": -0.24
+        "valor": -0.22
       },
       {
         "mes": "2025-03",
-        "valor": -0.06
+        "valor": -0.08
       },
       {
         "mes": "2025-04",
@@ -53,214 +45,170 @@
       },
       {
         "mes": "2025-05",
-        "valor": -0.02
-      },
-      {
-        "mes": "2025-06",
         "valor": -0.04
       },
       {
+        "mes": "2025-06",
+        "valor": -0.02
+      },
+      {
         "mes": "2025-07",
-        "valor": -0.14
+        "valor": -0.11
       },
       {
         "mes": "2025-08",
-        "valor": -0.28
+        "valor": -0.26
       },
       {
         "mes": "2025-09",
-        "valor": -0.4
+        "valor": -0.43
       },
       {
         "mes": "2025-10",
-        "valor": -0.51
+        "valor": -0.57
       },
       {
         "mes": "2025-11",
-        "valor": -0.55
+        "valor": -0.61
       },
       {
         "mes": "2025-12",
-        "valor": -0.54
+        "valor": -0.6
       },
       {
         "mes": "2026-01",
-        "valor": -0.37
+        "valor": -0.39
       },
       {
         "mes": "2026-02",
-        "valor": -0.14
+        "valor": -0.21
       },
       {
         "mes": "2026-03",
-        "valor": 0.13
+        "valor": 0.11
       },
       {
         "mes": "2026-04",
-        "valor": 0.48
+        "valor": 0.46
+      },
+      {
+        "mes": "2026-05",
+        "valor": 0.95
+      },
+      {
+        "mes": "2026-06",
+        "valor": 1.39
       }
     ],
-    "ultimo": 0.48
+    "ultimo": 1.39
   },
   "tsa": {
     "nome": "TSA (Atlântico Sul tropical)",
     "descricao": "Anomalia de temperatura do Atlântico tropical sul (equador a ~20°S), em °C. Atlântico mais quente (positivo) fornece mais umidade para a ZCAS — o corredor de chuva que atravessa o Sudeste no verão.",
     "serie": [
       {
-        "mes": "2024-01",
-        "valor": 1.32
-      },
-      {
-        "mes": "2024-02",
-        "valor": 1.41
-      },
-      {
-        "mes": "2024-03",
-        "valor": 1.67
-      },
-      {
-        "mes": "2024-04",
-        "valor": 1.41
-      },
-      {
-        "mes": "2024-05",
-        "valor": 1.17
-      },
-      {
-        "mes": "2024-06",
-        "valor": 0.85
-      },
-      {
         "mes": "2024-07",
-        "valor": 0.59
+        "valor": 0.33
       },
       {
         "mes": "2024-08",
-        "valor": 0.39
+        "valor": 0.19
       },
       {
         "mes": "2024-09",
-        "valor": 0.44
+        "valor": 0.3
       },
       {
         "mes": "2024-10",
-        "valor": 0.51
-      },
-      {
-        "mes": "2024-11",
-        "valor": 0.41
-      },
-      {
-        "mes": "2024-12",
-        "valor": 0.57
-      },
-      {
-        "mes": "2025-01",
-        "valor": 0.65
-      },
-      {
-        "mes": "2025-02",
-        "valor": 0.59
-      },
-      {
-        "mes": "2025-03",
-        "valor": 0.42
-      },
-      {
-        "mes": "2025-04",
-        "valor": 0.42
-      },
-      {
-        "mes": "2025-05",
-        "valor": 0.51
-      },
-      {
-        "mes": "2025-06",
-        "valor": 0.42
-      },
-      {
-        "mes": "2025-07",
-        "valor": 0.36
-      },
-      {
-        "mes": "2025-08",
-        "valor": 0.27
-      },
-      {
-        "mes": "2025-09",
         "valor": 0.28
       },
       {
+        "mes": "2024-11",
+        "valor": 0.22
+      },
+      {
+        "mes": "2024-12",
+        "valor": 0.31
+      },
+      {
+        "mes": "2025-01",
+        "valor": 0.32
+      },
+      {
+        "mes": "2025-02",
+        "valor": 0.33
+      },
+      {
+        "mes": "2025-03",
+        "valor": 0.08
+      },
+      {
+        "mes": "2025-04",
+        "valor": 0.11
+      },
+      {
+        "mes": "2025-05",
+        "valor": 0.17
+      },
+      {
+        "mes": "2025-06",
+        "valor": 0.11
+      },
+      {
+        "mes": "2025-07",
+        "valor": 0.11
+      },
+      {
+        "mes": "2025-08",
+        "valor": 0.07
+      },
+      {
+        "mes": "2025-09",
+        "valor": 0.13
+      },
+      {
         "mes": "2025-10",
-        "valor": 0.23
+        "valor": 0.0
       },
       {
         "mes": "2025-11",
-        "valor": 0.21
+        "valor": 0.02
       },
       {
         "mes": "2025-12",
-        "valor": 0.44
+        "valor": 0.17
+      },
+      {
+        "mes": "2026-01",
+        "valor": 0.3
+      },
+      {
+        "mes": "2026-02",
+        "valor": 0.45
+      },
+      {
+        "mes": "2026-03",
+        "valor": 0.27
+      },
+      {
+        "mes": "2026-04",
+        "valor": 0.38
+      },
+      {
+        "mes": "2026-05",
+        "valor": 0.17
+      },
+      {
+        "mes": "2026-06",
+        "valor": 0.2
       }
     ],
-    "ultimo": 0.44
+    "ultimo": 0.2
   },
   "dmi": {
     "nome": "DMI (Dipolo do Oceano Índico)",
     "descricao": "Diferença de temperatura entre o oeste e o leste do Oceano Índico tropical, em °C. A fase positiva tende a reduzir a chuva de primavera no centro-sul do Brasil por teleconexões atmosféricas.",
     "serie": [
-      {
-        "mes": "2023-05",
-        "valor": 0.44
-      },
-      {
-        "mes": "2023-06",
-        "valor": 0.67
-      },
-      {
-        "mes": "2023-07",
-        "valor": 0.5
-      },
-      {
-        "mes": "2023-08",
-        "valor": 0.82
-      },
-      {
-        "mes": "2023-09",
-        "valor": 0.95
-      },
-      {
-        "mes": "2023-10",
-        "valor": 0.8
-      },
-      {
-        "mes": "2023-11",
-        "valor": 0.92
-      },
-      {
-        "mes": "2023-12",
-        "valor": 0.85
-      },
-      {
-        "mes": "2024-01",
-        "valor": 0.77
-      },
-      {
-        "mes": "2024-02",
-        "valor": 0.33
-      },
-      {
-        "mes": "2024-03",
-        "valor": 0.42
-      },
-      {
-        "mes": "2024-04",
-        "valor": 0.44
-      },
-      {
-        "mes": "2024-05",
-        "valor": 0.3
-      },
       {
         "mes": "2024-06",
         "valor": 0.2
@@ -304,6 +252,58 @@
       {
         "mes": "2025-04",
         "valor": 0.15
+      },
+      {
+        "mes": "2025-05",
+        "valor": 0.11
+      },
+      {
+        "mes": "2025-06",
+        "valor": -0.01
+      },
+      {
+        "mes": "2025-07",
+        "valor": -0.07
+      },
+      {
+        "mes": "2025-08",
+        "valor": -0.42
+      },
+      {
+        "mes": "2025-09",
+        "valor": -0.47
+      },
+      {
+        "mes": "2025-10",
+        "valor": -0.45
+      },
+      {
+        "mes": "2025-11",
+        "valor": -0.26
+      },
+      {
+        "mes": "2025-12",
+        "valor": -0.02
+      },
+      {
+        "mes": "2026-01",
+        "valor": 0.12
+      },
+      {
+        "mes": "2026-02",
+        "valor": 0.53
+      },
+      {
+        "mes": "2026-03",
+        "valor": 0.28
+      },
+      {
+        "mes": "2026-04",
+        "valor": 0.28
+      },
+      {
+        "mes": "2026-05",
+        "valor": 0.15
       }
     ],
     "ultimo": 0.15
@@ -312,14 +312,6 @@
     "nome": "AAO (Oscilação Antártica)",
     "descricao": "Mede a posição do cinturão de ventos de oeste do Hemisfério Sul (adimensional). Fase negativa facilita a chegada de frentes frias ao Sudeste (mais chuva/frio); fase positiva tende a bloqueá-las.",
     "serie": [
-      {
-        "mes": "2024-06",
-        "valor": 0.21
-      },
-      {
-        "mes": "2024-07",
-        "valor": -0.6
-      },
       {
         "mes": "2024-08",
         "valor": -2.15
@@ -407,12 +399,20 @@
       {
         "mes": "2026-05",
         "valor": 0.54
+      },
+      {
+        "mes": "2026-06",
+        "valor": 2.51
+      },
+      {
+        "mes": "2026-07",
+        "valor": 0.39
       }
     ],
-    "ultimo": 0.54
+    "ultimo": 0.39
   },
   "enso": {
-    "estado": "Neutro",
-    "oni": 0.48
+    "estado": "El Niño",
+    "oni": 1.39
   }
 }
