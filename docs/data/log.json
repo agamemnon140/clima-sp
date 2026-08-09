@@ -1,5 +1,43 @@
 [
   {
+    "mes": "2026-08",
+    "gerado_em": "2026-08-09T19:40:14+00:00",
+    "indices": {
+      "oni": 0.93,
+      "tsa": 0.25,
+      "dmi": 0.24,
+      "aao": 1.15
+    },
+    "defasagens_meses": {
+      "oni": 2,
+      "tsa": 2,
+      "dmi": 3,
+      "aao": 1
+    },
+    "enso": "El Niño",
+    "resumo": {
+      "estacao": "NDJ 2026",
+      "chuva": {
+        "p_abaixo": 0.377,
+        "p_normal": 0.271,
+        "p_acima": 0.352,
+        "anomalia": 27.75,
+        "climatologia": 556.4,
+        "limiar_abaixo": -60.76,
+        "limiar_acima": 52.21
+      },
+      "temperatura": {
+        "p_abaixo": 0.212,
+        "p_normal": 0.224,
+        "p_acima": 0.564,
+        "anomalia": 0.69,
+        "climatologia": 21.4,
+        "limiar_abaixo": -0.36,
+        "limiar_acima": 0.21
+      }
+    }
+  },
+  {
     "mes": "2026-06",
     "gerado_em": "2026-06-13T16:16:26+00:00",
     "indices": {
