@@ -1,5 +1,43 @@
 [
   {
+    "mes": "2026-09",
+    "gerado_em": "2026-09-05T12:14:51+00:00",
+    "indices": {
+      "oni": 1.38,
+      "tsa": 0.25,
+      "dmi": 0.24,
+      "aao": 0.76
+    },
+    "defasagens_meses": {
+      "oni": 2,
+      "tsa": 3,
+      "dmi": 4,
+      "aao": 1
+    },
+    "enso": "El Niño",
+    "resumo": {
+      "estacao": "DJF 2026",
+      "chuva": {
+        "p_abaixo": 0.342,
+        "p_normal": 0.296,
+        "p_acima": 0.362,
+        "anomalia": 26.39,
+        "climatologia": 585.7,
+        "limiar_abaixo": -32.71,
+        "limiar_acima": 47.39
+      },
+      "temperatura": {
+        "p_abaixo": 0.224,
+        "p_normal": 0.189,
+        "p_acima": 0.587,
+        "anomalia": 0.42,
+        "climatologia": 22.1,
+        "limiar_abaixo": -0.49,
+        "limiar_acima": 0.26
+      }
+    }
+  },
+  {
     "mes": "2026-08",
     "gerado_em": "2026-08-09T19:40:14+00:00",
     "indices": {
