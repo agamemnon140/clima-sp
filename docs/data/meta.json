@@ -1,5 +1,5 @@
 {
-  "gerado_em": "2026-08-09T19:40:14+00:00",
+  "gerado_em": "2026-09-05T12:14:51+00:00",
   "periodo_treino": "1979-presente",
   "climatologia": "1991-2020",
   "fonte_alvo": "ERA5 via Open-Meteo Archive API",
@@ -9,9 +9,9 @@
   },
   "defasagens_indices_meses": {
     "oni": 2,
-    "tsa": 2,
-    "dmi": 3,
+    "tsa": 3,
+    "dmi": 4,
     "aao": 1
   },
-  "n_hindcast": 4446
+  "n_hindcast": 4454
 }
