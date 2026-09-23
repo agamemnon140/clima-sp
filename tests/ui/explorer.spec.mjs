@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { addDays, datesBetween } from '../../docs/js/weather-data.mjs';
 
 const chartCode = await readFile('node_modules/chart.js/dist/chart.umd.js', 'utf8');
-async function mockWeather(page, { archiveFail = false, seasonalFail = false } = {}) {
+async function mockWeather(page, { archiveFail = false, seasonalFail = false, forecastFail = false, geoTimezone = 'America/Sao_Paulo' } = {}) {
   await page.clock.setFixedTime(new Date('2026-09-23T15:00:00Z'));
   await page.route('https://cdn.jsdelivr.net/**', route => route.fulfill({ contentType: 'text/javascript', body: chartCode }));
   await page.route('https://geocoding-api.open-meteo.com/**', route => route.fulfill({ json: { results: [{ name: 'Campinas', admin1: 'São Paulo', country: 'Brasil', latitude: -22.9, longitude: -47.06, timezone: 'America/Sao_Paulo' }] } }));
@@ -11,11 +11,12 @@ async function mockWeather(page, { archiveFail = false, seasonalFail = false } =
     const url = new URL(route.request().url());
     const archive = url.hostname === 'archive-api.open-meteo.com';
     if (archive && archiveFail) return route.fulfill({ status: 503, body: 'unavailable' });
+    if (!archive && forecastFail) return route.fulfill({ status: 503, body: 'unavailable' });
     const start = archive ? url.searchParams.get('start_date') : '2026-09-23';
     const end = archive ? url.searchParams.get('end_date') : addDays(start, 15);
     const time = datesBetween(start, end);
     const old = Number(start.slice(0, 4)) < 2021;
-    return route.fulfill({ json: { timezone: 'America/Sao_Paulo', daily: { time,
+    return route.fulfill({ json: { timezone: Number(url.searchParams.get('latitude')) > 0 ? geoTimezone : 'America/Sao_Paulo', daily: { time,
       temperature_2m_mean: time.map(() => old ? 10 : 20), temperature_2m_max: time.map(() => 30),
       temperature_2m_min: time.map(() => 5), precipitation_sum: time.map(() => old ? 2 : 3) } } });
   });
@@ -121,4 +122,35 @@ test('histórico atual explicita dados parciais e pagina sem descartar valores d
   await page.locator('#page-prev').click(); await expect(page.locator('#page-status')).toContainText('Página 2 de 3');
   const downloaded = page.waitForEvent('download'); await page.locator('#download-csv').click();
   const file = await downloaded; expect((await readFile(await file.path(), 'utf8')).split('\r\n')).toHaveLength(91);
+});
+
+test('navegação preserva a rolagem e o atalho de teclado mantém a aba atual', async ({ page }) => {
+  await mockWeather(page); await page.goto('/#historico'); await expect(page.locator('#history-content')).toBeVisible();
+  await page.locator('#history-summary').scrollIntoViewIfNeeded();
+  const previous = await page.evaluate(() => scrollY);
+  // Aciona links sem a rolagem auxiliar que o runner usa para clicar na navegação desktop.
+  await page.locator('[data-tab="previsao"]').evaluate(link => link.click());
+  await expect(page.locator('#previsao')).toBeVisible();
+  await page.locator('[data-tab="historico"]').evaluate(link => link.click());
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeCloseTo(previous, 0);
+  await page.locator('.skip-link').focus(); await page.keyboard.press('Enter');
+  await expect(page.locator('#historico')).toBeVisible();
+  await expect(page.locator('#conteudo')).toBeFocused();
+  await expect(page).toHaveURL(/#historico$/);
+});
+
+test('histórico resolve o fuso da geolocalização mesmo com previsão indisponível', async ({ page, context }) => {
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: 35.676, longitude: 139.65 });
+  await mockWeather(page, { forecastFail: true, geoTimezone: 'Asia/Tokyo' });
+  await page.goto('/#historico'); await expect(page.locator('#history-content')).toBeVisible();
+  await page.locator('#change-location').click(); await page.locator('#use-location').click();
+  await expect(page.locator('#location-timezone')).toHaveText('Fuso: Asia/Tokyo');
+  await expect(page.locator('#history-content')).toBeVisible();
+  await expect(page.locator('#history-end')).toHaveAttribute('max', '2026-09-24');
+  await page.getByRole('button', { name: 'Este mês', exact: true }).click();
+  await expect(page.locator('#history-summary')).toContainText('19/24 dias');
+  await expect(page.locator('#history-status')).toContainText('19/09/2026');
+  await page.locator('[data-tab="previsao"]').click();
+  await expect(page.locator('#forecast-status')).toContainText('HTTP 503');
 });

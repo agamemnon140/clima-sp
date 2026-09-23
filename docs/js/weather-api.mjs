@@ -49,6 +49,18 @@ function params(location) {
   return new URLSearchParams({ latitude: location.latitude, longitude: location.longitude,
     timezone: location.timezone, daily: VARIABLES });
 }
+export async function resolveLocation(location, signal) {
+  if (location.timezone !== 'auto') return location;
+  // Metadados do arquivo histórico resolvem o fuso sem depender da previsão ao vivo.
+  const query = params(location);
+  query.set('models', 'era5');
+  query.set('start_date', '2000-01-01');
+  query.set('end_date', '2000-01-01');
+  const result = await getJSON(`https://archive-api.open-meteo.com/v1/archive?${query}`, signal);
+  if (!result.timezone || result.timezone === 'auto') throw new Error('Não foi possível identificar o fuso. Busque uma cidade pelo nome.');
+  todayIn(result.timezone); // Valida antes de persistir.
+  return { ...location, timezone: result.timezone };
+}
 export async function forecast(location, signal) {
   const query = params(location);
   query.set('forecast_days', '16');
