@@ -1,6 +1,6 @@
 import { aggregate, addDays, bounds, climatology, compare, csv, datesBetween, summarize, todayIn, validDate } from './weather-data.mjs';
-import { forecast, history, SAO_PAULO, searchCities } from './weather-api.mjs';
-import { clearCharts, dailyGroups, dateLabel, format, rangeLabel, renderCharts, showSelection, summaryCards } from './weather-charts.mjs';
+import { forecast, history, resolveLocation, SAO_PAULO, searchCities } from './weather-api.mjs';
+import { clearCharts, dailyGroups, dateLabel, format, rangeLabel, renderCharts, summaryCards } from './weather-charts.mjs';
 
 const $ = id => document.getElementById(id);
 function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
@@ -37,7 +37,7 @@ let geoRequest = 0;
 function locationLabel(value) { return [...new Set([value.name, value.region, value.country].filter(Boolean))].join(', '); }
 function updateLocationLabel() {
   $('location-name').textContent = locationLabel(location);
-  $('location-timezone').textContent = location.timezone === 'auto' ? 'Fuso definido pela localização' : `Fuso: ${location.timezone.replaceAll('_', ' ')}`;
+  $('location-timezone').textContent = location.timezone === 'auto' ? 'Identificando o fuso da localização…' : `Fuso: ${location.timezone.replaceAll('_', ' ')}`;
   $('history-start').max = $('history-end').max = todayIn(location.timezone);
 }
 function navigate() {
@@ -61,6 +61,22 @@ function navigate() {
   });
 }
 window.addEventListener('hashchange', navigate);
+window.history.scrollRestoration = 'manual';
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href^="#"]');
+  if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+  const fragment = link.getAttribute('href');
+  if (fragment === '#conteudo') {
+    event.preventDefault();
+    $('conteudo').focus({ preventScroll: true });
+    $('conteudo').scrollIntoView({ block: 'start' });
+  } else if (['#previsao', '#historico', '#tendencias', '#sobre', '#skill'].includes(fragment)) {
+    // Evita o salto automático da âncora antes de salvar a posição da aba anterior.
+    event.preventDefault();
+    if (window.location.hash !== fragment) window.history.pushState(null, '', fragment);
+    navigate();
+  }
+});
 
 function periodCard(row, drill) {
   const card = document.createElement('article');
@@ -142,6 +158,17 @@ async function loadHistory() {
   clearCharts('history');
   historyRows = []; grouped = [];
   try {
+    if (location.timezone === 'auto') {
+      const resolved = await resolveLocation(location, controller.signal);
+      if (controller.signal.aborted) return;
+      location = resolved;
+      save('clima-location', location);
+      updateLocationLabel();
+      const today = todayIn(location.timezone);
+      if (filters.end > today) filters.end = today;
+      if (filters.start > filters.end) filters.start = filters.end;
+      syncFilters();
+    }
     const rows = await history(location, filters.start, filters.end, controller.signal,
       text => { if (!controller.signal.aborted) $('history-status').textContent = text; });
     if (controller.signal.aborted) return;
