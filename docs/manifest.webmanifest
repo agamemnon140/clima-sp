@@ -1,7 +1,7 @@
 {
-  "name": "clima-sp — Previsão sazonal RMSP",
-  "short_name": "clima-sp",
-  "description": "Previsão climática sazonal probabilística para a Região Metropolitana de São Paulo.",
+  "name": "Clima — previsão e histórico",
+  "short_name": "Clima",
+  "description": "Previsão do tempo, histórico de chuva e temperatura e tendências de São Paulo.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#123c63",

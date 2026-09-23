@@ -5,3 +5,7 @@ venv/
 data/cache/
 .DS_Store
 desktop.ini
+node_modules/
+test-results/
+playwright-report/
+.npm-cache/

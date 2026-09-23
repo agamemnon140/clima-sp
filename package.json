@@ -1,0 +1,13 @@
+{
+  "name": "clima-sp-dashboard",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:ui": "playwright test",
+    "check": "node --check docs/js/app.js && node --check docs/js/explorer.mjs && node --check docs/js/weather-api.mjs && node --check docs/js/weather-data.mjs && node --check docs/js/weather-charts.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "chart.js": "^4.4.7"
+  }
+}
