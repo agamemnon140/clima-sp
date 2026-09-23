@@ -1,7 +1,7 @@
 import { addDays, bounds, datesBetween, FIELDS, summarize, todayIn, validDate } from './weather-data.mjs';
 import { forecast, history, resolveLocation, SAO_PAULO, searchCities } from './weather-api.mjs';
 import { clearCharts, dailyGroups, dateLabel, format, rangeLabel, renderCharts, summaryCards } from './weather-charts.mjs';
-import { buildMatrix, cellStyle, gradientCSS, LAYOUTS, LAYOUT_FROM_GROUP, METRICS } from './matrix.mjs';
+import { buildMatrix, cellStyle, DEFAULT_PERIOD, gradientCSS, LAYOUTS, LAYOUT_FROM_GROUP, METRICS, PERIODS, periodRange } from './matrix.mjs';
 
 const $ = id => document.getElementById(id);
 function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
@@ -14,16 +14,24 @@ const savedLocation = read('clima-location', SAO_PAULO);
 let location = validLocation(savedLocation) ? savedLocation : SAO_PAULO;
 let favorites = read('clima-favorites', [SAO_PAULO]);
 favorites = Array.isArray(favorites) ? favorites.filter(validLocation).slice(0, 10) : [SAO_PAULO];
-const defaultEnd = addDays(todayIn(location.timezone), -5);
 const savedFilters = read('clima-history-filters', {});
 let filters = {
-  start: validDate(savedFilters.start) && savedFilters.start >= '1940-01-01' ? savedFilters.start : addDays(defaultEnd, -29),
-  end: validDate(savedFilters.end) ? savedFilters.end : defaultEnd,
+  period: PERIODS.some(item => item.key === savedFilters.period) ? savedFilters.period : DEFAULT_PERIOD,
+  start: validDate(savedFilters.start) && savedFilters.start >= '1940-01-01' ? savedFilters.start : '1940-01-01',
+  end: validDate(savedFilters.end) ? savedFilters.end : todayIn(location.timezone),
   // Filtros antigos guardavam "group"; a leitura equivalente é escolhida na migração.
-  layout: LAYOUTS[savedFilters.layout] ? savedFilters.layout : LAYOUT_FROM_GROUP[savedFilters.group] ?? 'month-day',
+  layout: LAYOUTS[savedFilters.layout] ? savedFilters.layout : LAYOUT_FROM_GROUP[savedFilters.group] ?? 'year-month',
   metric: METRICS[savedFilters.metric] ? savedFilters.metric : 'precip',
 };
-if (filters.start > filters.end || filters.end > todayIn(location.timezone)) filters = { start: addDays(defaultEnd, -29), end: defaultEnd, layout: 'month-day', metric: 'precip' };
+if (filters.start > filters.end || filters.end > todayIn(location.timezone)) { filters.period = DEFAULT_PERIOD; filters.layout = 'year-month'; }
+// Períodos predefinidos acompanham o "hoje" da localização; o personalizado só é recortado ao presente.
+function clampToToday() {
+  const today = todayIn(location.timezone);
+  if (filters.period !== 'custom') { Object.assign(filters, periodRange(filters.period, today)); return; }
+  if (filters.end > today) filters.end = today;
+  if (filters.start > filters.end) filters.start = filters.end;
+}
+clampToToday();
 let activeTab;
 let historyLoaded = false;
 let historyController;
@@ -108,9 +116,7 @@ async function loadForecast() {
     if (controller.signal.aborted) return;
     if (location.timezone === 'auto' && result.timezone) {
       location = { ...location, timezone: result.timezone }; save('clima-location', location); updateLocationLabel();
-      const today = todayIn(location.timezone);
-      if (filters.end > today) filters.end = today;
-      if (filters.start > filters.end) filters.start = filters.end;
+      clampToToday();
       historyLoaded = false;
       if (activeTab === 'historico') loadHistory();
     }
@@ -130,6 +136,8 @@ $('forecast-retry').addEventListener('click', loadForecast);
 
 function syncFilters() {
   $('history-start').value = filters.start; $('history-end').value = filters.end;
+  $('custom-range').hidden = filters.period !== 'custom';
+  document.querySelectorAll('[data-period]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.period === filters.period)));
   document.querySelectorAll('[data-layout]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.layout === filters.layout)));
   document.querySelectorAll('[data-metric]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.metric === filters.metric)));
   save('clima-history-filters', filters);
@@ -160,9 +168,7 @@ async function loadHistory() {
       location = resolved;
       save('clima-location', location);
       updateLocationLabel();
-      const today = todayIn(location.timezone);
-      if (filters.end > today) filters.end = today;
-      if (filters.start > filters.end) filters.start = filters.end;
+      clampToToday();
       syncFilters();
     }
     const rows = await history(location, filters.start, filters.end, controller.signal,
@@ -185,7 +191,7 @@ async function loadHistory() {
   }
 }
 function drillTo({ layout, start, end }) {
-  filters = { ...filters, layout, start, end };
+  filters = { ...filters, period: 'custom', layout, start, end };
   loadHistory();
   $('history-title').focus({ preventScroll: true });
   $('history-form').scrollIntoView({ block: 'start' });
@@ -246,23 +252,21 @@ function renderMatrix() {
 }
 function choose(key, value) {
   const before = filters.start + filters.end;
-  if (!takeDates()) return;
+  if (filters.period === 'custom' && !takeDates()) return;
   filters[key] = value;
   if (filters.start + filters.end !== before || $('history-content').hidden) loadHistory();
   else { syncFilters(); renderMatrix(); }
 }
-$('history-form').addEventListener('submit', event => { event.preventDefault(); if (takeDates()) loadHistory(); });
+$('history-form').addEventListener('submit', event => { event.preventDefault(); if (takeDates()) { filters.period = 'custom'; loadHistory(); } });
 $('history-retry').addEventListener('click', loadHistory);
-document.querySelectorAll('[data-layout]').forEach(button => button.addEventListener('click', () => choose('layout', button.dataset.layout)));
-document.querySelectorAll('[data-metric]').forEach(button => button.addEventListener('click', () => choose('metric', button.dataset.metric)));
-document.querySelectorAll('[data-range]').forEach(button => button.addEventListener('click', () => {
-  const today = todayIn(location.timezone), year = Number(today.slice(0, 4));
-  const kind = button.dataset.range;
-  filters.end = kind === 'last-year' ? `${year - 1}-12-31` : kind === '30' ? addDays(today, -5) : today;
-  filters.start = kind === 'last-year' ? `${year - 1}-01-01` : kind === 'year' ? `${year}-01-01` : kind === 'month' ? today.slice(0, 7) + '-01' : addDays(filters.end, -29);
-  filters.layout = ['year', 'last-year'].includes(kind) ? 'year-month' : 'month-day';
+document.querySelectorAll('[data-period]').forEach(button => button.addEventListener('click', () => {
+  filters.period = button.dataset.period;
+  if (filters.period === 'custom') { syncFilters(); $('history-start').focus({ preventScroll: true }); return; }
+  clampToToday();
   loadHistory();
 }));
+document.querySelectorAll('[data-layout]').forEach(button => button.addEventListener('click', () => choose('layout', button.dataset.layout)));
+document.querySelectorAll('[data-metric]').forEach(button => button.addEventListener('click', () => choose('metric', button.dataset.metric)));
 function shiftRange(direction) {
   if (!takeDates()) return;
   const [monthStart, monthEnd] = bounds(filters.start, 'month');
@@ -278,7 +282,7 @@ function shiftRange(direction) {
   }
   const today = todayIn(location.timezone);
   if (start < '1940-01-01' || start > today) { $('history-status').textContent = 'O histórico permite consultas entre 1940 e hoje.'; return; }
-  filters = { ...filters, start, end: end > today ? today : end }; loadHistory();
+  filters = { ...filters, period: 'custom', start, end: end > today ? today : end }; loadHistory();
 }
 $('range-prev').addEventListener('click', () => shiftRange(-1));
 $('range-next').addEventListener('click', () => shiftRange(1));
@@ -286,9 +290,7 @@ $('range-next').addEventListener('click', () => shiftRange(1));
 function chooseLocation(value) {
   geoRequest++; searchController?.abort(); historyController?.abort();
   location = value; save('clima-location', location); updateLocationLabel();
-  const today = todayIn(location.timezone);
-  if (filters.end > today) filters.end = today;
-  if (filters.start > filters.end) filters.start = filters.end;
+  clampToToday();
   historyLoaded = false; historyRows = [];
   $('history-content').hidden = true;
   $('location-dialog').close();
