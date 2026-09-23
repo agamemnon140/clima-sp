@@ -1,6 +1,6 @@
 // Datas civis da cidade: UTC serve apenas para aritmética, nunca para converter o dia local.
 const DAY = 86400000;
-export const FIELDS = ['precip', 'mean', 'max', 'min'];
+export const FIELDS = ['precip', 'mean', 'max', 'min', 'sun'];
 export function validDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) &&
     new Date(value).toISOString().slice(0, 10) === value;
@@ -32,13 +32,26 @@ export function bounds(date, group) {
   }
   return [date, date];
 }
+// Semana ISO: a semana (segunda a domingo) pertence ao ano da sua quinta-feira.
+export function isoWeek(date) {
+  const thursday = addDays(bounds(date, 'week')[0], 3);
+  const year = Number(thursday.slice(0, 4));
+  const week = Math.floor((Date.parse(thursday) - Date.parse(`${year}-01-01`)) / DAY / 7) + 1;
+  return { year, week };
+}
 export function normalizeDaily(daily) {
   if (!Array.isArray(daily?.time)) throw new Error('A fonte retornou dados inválidos.');
-  const mapping = { precip: 'precipitation_sum', mean: 'temperature_2m_mean', max: 'temperature_2m_max', min: 'temperature_2m_min' };
+  const mapping = { precip: 'precipitation_sum', mean: 'temperature_2m_mean', max: 'temperature_2m_max',
+    min: 'temperature_2m_min', sun: 'sunshine_duration' };
   return daily.time.map((date, i) => ({ date, ...Object.fromEntries(
-    Object.entries(mapping).map(([key, field]) => [key, Number.isFinite(daily[field]?.[i]) ? daily[field][i] : null]),
+    Object.entries(mapping).map(([key, field]) => {
+      const value = daily[field]?.[i];
+      if (!Number.isFinite(value)) return [key, null];
+      return [key, key === 'sun' ? value / 3600 : value]; // Duração de sol chega em segundos.
+    }),
   ) }));
 }
+const AVERAGED = new Set(['mean', 'sun']);
 export function summarize(rows, expectedDays = rows.length) {
   const counts = {};
   const result = {};
@@ -46,7 +59,7 @@ export function summarize(rows, expectedDays = rows.length) {
     const values = rows.map(row => row[field]).filter(Number.isFinite);
     counts[field] = values.length;
     result[field] = !values.length ? null : field === 'max' ? Math.max(...values) :
-      field === 'min' ? Math.min(...values) : values.reduce((a, b) => a + b, 0) / (field === 'mean' ? values.length : 1);
+      field === 'min' ? Math.min(...values) : values.reduce((a, b) => a + b, 0) / (AVERAGED.has(field) ? values.length : 1);
   }
   return { ...result, counts, expectedDays, partial: FIELDS.some(key => counts[key] < expectedDays) };
 }
@@ -67,45 +80,4 @@ export function aggregate(rows, start, end, group) {
     ...bucket, ...summarize(bucket.rows, bucket.days.length),
     clipped: bucket.start !== bucket.periodStart || bucket.end !== bucket.periodEnd,
   }));
-}
-// Normal diária do calendário, com 30 amostras (8 para 29/fev) por variável.
-export function climatology(rows) {
-  const days = new Map();
-  for (const row of rows) {
-    if (row.date < '1991-01-01' || row.date > '2020-12-31') continue;
-    const key = row.date.slice(5);
-    if (!days.has(key)) days.set(key, new Map());
-    days.get(key).set(row.date, row);
-  }
-  return new Map([...days].map(([key, entries]) => {
-    const values = [...entries.values()];
-    const expected = key === '02-29' ? 8 : 30;
-    const result = {};
-    for (const field of ['precip', 'mean']) {
-      const valid = values.map(r => r[field]).filter(Number.isFinite);
-      result[field] = valid.length === expected ? valid.reduce((a, b) => a + b, 0) / expected : null;
-    }
-    return [key, result];
-  }));
-}
-export function compare(rows, normal) {
-  const result = {};
-  for (const field of ['precip', 'mean']) {
-    const observed = rows.filter(row => Number.isFinite(row[field]));
-    const baseline = observed.map(row => normal.get(row.date.slice(5))?.[field]);
-    const complete = baseline.length > 0 && baseline.every(Number.isFinite);
-    const divisor = field === 'mean' ? observed.length : 1;
-    const actual = observed.reduce((sum, row) => sum + row[field], 0) / divisor;
-    const reference = complete ? baseline.reduce((a, b) => a + b, 0) / divisor : null;
-    result[field] = { reference, delta: reference === null ? null : actual - reference, days: observed.length };
-  }
-  return result;
-}
-export function csv(rows) {
-  const header = ['inicio', 'fim', 'precipitacao_mm', 'temperatura_media_C', 'maxima_C', 'minima_C',
-    'dias_precipitacao', 'dias_media', 'dias_maxima', 'dias_minima', 'dias_selecionados', 'periodo_parcial'];
-  const number = value => Number.isFinite(value) ? value.toFixed(2).replace('.', ',') : '';
-  return '\uFEFF' + [header.join(';'), ...rows.map(row => [row.start, row.end,
-    ...FIELDS.map(key => number(row[key])), ...FIELDS.map(key => row.counts[key]),
-    row.expectedDays, row.partial || row.clipped ? 'sim' : 'nao'].join(';'))].join('\r\n');
 }

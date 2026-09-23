@@ -12,18 +12,25 @@ Previsão e Histórico usam a cidade escolhida; Tendências mantém o modelo da 
 No celular, a navegação fica na parte inferior, com áreas de toque de pelo menos 44 px,
 gráficos separados de temperatura e chuva e listas de valores que dispensam ampliar a tela.
 
-O Histórico consulta os dados diários ERA5 do Open-Meteo sob demanda, agrupados em
-dia, semana (segunda a domingo), mês ou ano. Chuva é somada; temperatura média usa
-as médias diárias disponíveis; máxima e mínima são extremos absolutos. Dados ausentes
-não viram zero. A cobertura aparece por variável e os períodos incompletos são sinalizados.
-O CSV inclui todo o intervalo, mesmo quando a lista e os gráficos estão paginados.
+O Histórico consulta os dados diários ERA5 do Open-Meteo sob demanda e os mostra em
+uma matriz de calendário (heatmap) para uma variável por vez: chuva, temperatura média,
+mínima, máxima ou horas de sol. Há quatro leituras: **Ano × Mês**, **Ano × Semana**,
+**Mês × Dia** e **Semana × Dia**. Chuva é somada; temperatura média e horas de sol são
+médias diárias; máxima e mínima são extremos absolutos. Semanas vão de segunda a domingo
+e, em Ano × Semana, pertencem ao ano da sua quinta-feira (semana ISO).
 
-A comparação opcional usa as normais diárias de 1991–2020 nos mesmos dias com dados
-da consulta. A referência exige os 30 anos, ou os oito anos bissextos para 29/fev.
-Os dados ficam em cache por localização, fuso e ano no IndexedDB (seis horas para
-os dois anos mais recentes, 30 dias para os anteriores); sem armazenamento disponível,
-o app usa cache em memória. A referência histórica é baixada apenas quando solicitada.
-ERA5 é reanálise em grade, não medição de estação, e tem cerca de cinco dias de defasagem.
+As cores usam um gradiente contínuo escalado sobre os valores visíveis na matriz; o máximo
+e o mínimo do que está na tela recebem contorno (sólido e tracejado). Dias sem dados aparecem
+hachurados com “–”, nunca como zero; dias inexistentes ficam em branco. Cada célula informa,
+ao toque ou ao passar o mouse, o período, o valor e a cobertura de dias. Tocar em um mês,
+semana ou ano abre seus dias. Não há exportação CSV nem comparação com a normal 1991–2020;
+intervalos de vários anos ficam mais legíveis em Ano × Mês ou Ano × Semana.
+
+Os dados ficam em cache por localização, fuso e ano no IndexedDB `clima-history-v2` (seis
+horas para os dois anos mais recentes, 30 dias para os anteriores); sem armazenamento
+disponível, o app usa cache em memória. Horas de sol vêm de `sunshine_duration` do ERA5,
+derivada da radiação (limiar de 120 W/m²), não de heliógrafo. ERA5 é reanálise em grade,
+não medição de estação, e tem cerca de cinco dias de defasagem.
 
 **Fonte legada:** o pipeline sazonal existente usa a seleção automática da Archive API,
 embora versões anteriores o identificassem como ERA5. O Histórico novo fixa `models=era5`.

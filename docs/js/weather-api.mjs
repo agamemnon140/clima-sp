@@ -1,13 +1,14 @@
 import { addDays, normalizeDaily, todayIn } from './weather-data.mjs';
 
 export const SAO_PAULO = { name: 'São Paulo', region: 'São Paulo', country: 'Brasil', latitude: -23.5, longitude: -46.62, timezone: 'America/Sao_Paulo' };
-const VARIABLES = 'temperature_2m_mean,temperature_2m_max,temperature_2m_min,precipitation_sum';
+const VARIABLES = 'temperature_2m_mean,temperature_2m_max,temperature_2m_min,precipitation_sum,sunshine_duration';
 const memory = new Map();
 let database;
 function openCache() {
   if (!database) database = new Promise(resolve => {
     try {
-      const request = indexedDB.open('clima-history-v1', 1);
+      try { indexedDB.deleteDatabase('clima-history-v1'); } catch { /* cache antigo sem horas de sol */ }
+      const request = indexedDB.open('clima-history-v2', 1);
       request.onupgradeneeded = () => request.result.createObjectStore('years');
       request.onsuccess = () => resolve(request.result);
       request.onerror = request.onblocked = () => resolve(null);
@@ -73,7 +74,7 @@ export async function history(location, start, end, signal, progress = () => {})
   if (start > cappedEnd) return [];
   const first = Number(start.slice(0, 4));
   const last = Number(cappedEnd.slice(0, 4));
-  const prefix = `era5:${location.latitude}:${location.longitude}:${location.timezone}:`;
+  const prefix = `era5v2:${location.latitude}:${location.longitude}:${location.timezone}:`;
   const years = new Map();
   const missing = [];
   for (let year = first; year <= last; year++) {

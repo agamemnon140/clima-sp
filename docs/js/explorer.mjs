@@ -1,6 +1,7 @@
-import { aggregate, addDays, bounds, climatology, compare, csv, datesBetween, summarize, todayIn, validDate } from './weather-data.mjs';
+import { addDays, bounds, datesBetween, FIELDS, summarize, todayIn, validDate } from './weather-data.mjs';
 import { forecast, history, resolveLocation, SAO_PAULO, searchCities } from './weather-api.mjs';
 import { clearCharts, dailyGroups, dateLabel, format, rangeLabel, renderCharts, summaryCards } from './weather-charts.mjs';
+import { buildMatrix, cellStyle, gradientCSS, LAYOUTS, LAYOUT_FROM_GROUP, METRICS } from './matrix.mjs';
 
 const $ = id => document.getElementById(id);
 function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
@@ -18,18 +19,16 @@ const savedFilters = read('clima-history-filters', {});
 let filters = {
   start: validDate(savedFilters.start) && savedFilters.start >= '1940-01-01' ? savedFilters.start : addDays(defaultEnd, -29),
   end: validDate(savedFilters.end) ? savedFilters.end : defaultEnd,
-  group: ['day', 'week', 'month', 'year'].includes(savedFilters.group) ? savedFilters.group : 'day',
+  // Filtros antigos guardavam "group"; a leitura equivalente é escolhida na migração.
+  layout: LAYOUTS[savedFilters.layout] ? savedFilters.layout : LAYOUT_FROM_GROUP[savedFilters.group] ?? 'month-day',
+  metric: METRICS[savedFilters.metric] ? savedFilters.metric : 'precip',
 };
-if (filters.start > filters.end || filters.end > todayIn(location.timezone)) filters = { start: addDays(defaultEnd, -29), end: defaultEnd, group: 'day' };
+if (filters.start > filters.end || filters.end > todayIn(location.timezone)) filters = { start: addDays(defaultEnd, -29), end: defaultEnd, layout: 'month-day', metric: 'precip' };
 let activeTab;
 let historyLoaded = false;
 let historyController;
 let forecastController;
-let comparisonController;
 let historyRows = [];
-let grouped = [];
-let page = 0;
-const PAGE_SIZE = 31;
 const positions = new Map();
 let searchController;
 let geoRequest = 0;
@@ -78,12 +77,11 @@ document.addEventListener('click', event => {
   }
 });
 
-function periodCard(row, drill) {
+function periodCard(row) {
   const card = document.createElement('article');
   card.className = 'period-card';
-  const heading = document.createElement(drill ? 'button' : 'h4');
+  const heading = document.createElement('h4');
   heading.textContent = rangeLabel(row);
-  if (drill) { heading.type = 'button'; heading.className = 'period-open'; heading.addEventListener('click', drill); }
   card.append(heading);
   if (row.partial || row.clipped) {
     const badge = document.createElement('span'); badge.className = 'partial-badge'; badge.textContent = 'Parcial'; card.append(badge);
@@ -132,7 +130,8 @@ $('forecast-retry').addEventListener('click', loadForecast);
 
 function syncFilters() {
   $('history-start').value = filters.start; $('history-end').value = filters.end;
-  document.querySelectorAll('[data-group]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.group === filters.group)));
+  document.querySelectorAll('[data-layout]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.layout === filters.layout)));
+  document.querySelectorAll('[data-metric]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.metric === filters.metric)));
   save('clima-history-filters', filters);
 }
 function takeDates() {
@@ -146,17 +145,14 @@ function takeDates() {
   return true;
 }
 async function loadHistory() {
-  historyController?.abort(); comparisonController?.abort();
+  historyController?.abort();
   const controller = new AbortController(); historyController = controller;
   historyLoaded = true;
   syncFilters();
   $('history-content').hidden = true;
   $('history-retry').hidden = true;
-  $('history-comparison').hidden = true;
-  $('comparison-status').textContent = '';
   $('history-status').textContent = 'Carregando o histórico…';
-  clearCharts('history');
-  historyRows = []; grouped = [];
+  historyRows = [];
   try {
     if (location.timezone === 'auto') {
       const resolved = await resolveLocation(location, controller.signal);
@@ -173,19 +169,14 @@ async function loadHistory() {
       text => { if (!controller.signal.aborted) $('history-status').textContent = text; });
     if (controller.signal.aborted) return;
     historyRows = rows;
-    grouped = aggregate(rows, filters.start, filters.end, filters.group);
-    const validRows = rows.filter(row => ['precip', 'mean', 'max', 'min'].some(key => Number.isFinite(row[key])));
+    const validRows = rows.filter(row => FIELDS.some(key => Number.isFinite(row[key])));
     const last = validRows.at(-1)?.date;
     const summary = summarize(rows, datesBetween(filters.start, filters.end).length);
     $('history-status').textContent = last
       ? `ERA5 · ${locationLabel(location)} · Último dia com dados na consulta: ${dateLabel(last)}.${summary.partial ? ' Intervalo parcial: há dias ainda indisponíveis ou sem dados.' : ''}`
       : 'Sem dados disponíveis neste intervalo. O ERA5 costuma ter cerca de cinco dias de atraso. Escolha datas anteriores.';
-    $('history-summary-title').textContent = `${dateLabel(filters.start)} a ${dateLabel(filters.end)}`;
-    summaryCards($('history-summary'), summary);
+    renderMatrix();
     $('history-content').hidden = false;
-    page = Math.max(0, Math.ceil(grouped.length / PAGE_SIZE) - 1);
-    renderHistoryPage();
-    if ($('compare-normal').checked && last) loadComparison();
   } catch (error) {
     if (controller.signal.aborted) return;
     historyLoaded = false;
@@ -193,74 +184,83 @@ async function loadHistory() {
     $('history-retry').hidden = false;
   }
 }
-function drillInto(row) {
-  filters = { start: row.start, end: row.end, group: filters.group === 'year' ? 'month' : 'day' };
+function drillTo({ layout, start, end }) {
+  filters = { ...filters, layout, start, end };
   loadHistory();
   $('history-title').focus({ preventScroll: true });
   $('history-form').scrollIntoView({ block: 'start' });
 }
-function renderHistoryPage() {
-  const rows = grouped.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const canDrill = filters.group !== 'day';
-  $('history-list').replaceChildren(...rows.map(row => periodCard(row, canDrill ? () => drillInto(row) : null)));
-  const table = $('history-table'); table.replaceChildren();
-  const caption = document.createElement('caption'); caption.textContent = 'Chuva e temperaturas; máxima e mínima são extremos absolutos.'; table.append(caption);
+const compact = value => value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function drillButton(className, text, label, target) {
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = className; button.textContent = text;
+  button.setAttribute('aria-label', `${label}. Abrir dias`);
+  button.addEventListener('click', () => drillTo(target));
+  return button;
+}
+function renderMatrix() {
+  const matrix = buildMatrix(historyRows, filters.start, filters.end, filters.layout, filters.metric);
+  $('matrix-caption').textContent = `${matrix.label} (${matrix.unit}) · ${LAYOUTS[filters.layout].label} · ${dateLabel(filters.start)} a ${dateLabel(filters.end)}`;
+  const table = $('history-matrix'); table.replaceChildren();
   const head = table.createTHead().insertRow();
-  for (const label of ['Período', 'Chuva (mm)', 'Média (°C)', 'Máxima (°C)', 'Mínima (°C)', 'Cobertura']) {
-    const th = document.createElement('th'); th.scope = 'col'; th.textContent = label; head.append(th);
+  const corner = document.createElement('th'); corner.scope = 'col'; corner.textContent = matrix.rowName; head.append(corner);
+  for (const column of matrix.columns) {
+    const th = document.createElement('th'); th.scope = 'col'; th.textContent = column.label; th.title = column.title;
+    th.setAttribute('aria-label', column.title); head.append(th);
   }
   const body = table.createTBody();
-  for (const row of rows) {
+  matrix.rows.forEach((row, r) => {
     const tr = body.insertRow();
-    const title = tr.insertCell();
-    if (canDrill) { const button = document.createElement('button'); button.textContent = rangeLabel(row); button.addEventListener('click', () => drillInto(row)); title.append(button); }
-    else title.textContent = rangeLabel(row);
-    for (const key of ['precip', 'mean', 'max', 'min']) {
-      tr.insertCell().textContent = format(row[key]) + (row.counts[key] < row.expectedDays ? ` (${row.counts[key]}/${row.expectedDays} dias)` : '');
-    }
-    tr.insertCell().textContent = row.partial || row.clipped ? 'Parcial' : 'Completa';
-  }
-  $('page-status').textContent = `Página ${page + 1} de ${Math.max(1, Math.ceil(grouped.length / PAGE_SIZE))}`;
-  $('page-prev').disabled = page === 0;
-  $('page-next').disabled = (page + 1) * PAGE_SIZE >= grouped.length;
-  renderCharts('history', rows, $('history-selection'));
+    const th = document.createElement('th'); th.scope = 'row'; th.title = row.title;
+    if (row.drill) th.append(drillButton('row-open', row.label, row.title, row.drill));
+    else th.textContent = row.label;
+    tr.append(th);
+    row.cells.forEach((cell, c) => {
+      const td = tr.insertCell();
+      if (!cell) { td.className = 'blank'; return; }
+      const available = Number.isFinite(cell.value);
+      const isMax = available && matrix.maxCell?.row === r && matrix.maxCell?.col === c;
+      const isMin = available && matrix.minCell?.row === r && matrix.minCell?.col === c;
+      let title = `${cell.title} · ${format(cell.value, matrix.unit)}${cell.partial ? ` · ${cell.count}/${cell.days} dias` : ''}`;
+      if (isMax) title += ' · máximo do período';
+      if (isMin) title += ' · mínimo do período';
+      td.className = available ? 'heat' : 'empty';
+      td.classList.toggle('is-max', isMax); td.classList.toggle('is-min', isMin);
+      if (available) {
+        const style = cellStyle(cell.value, matrix.min, matrix.max, matrix.scale);
+        td.style.background = style.background; td.style.color = style.color;
+      }
+      td.title = title;
+      const text = available ? compact(cell.value) : '–';
+      if (cell.drill) td.append(drillButton('heat-cell', text, title, cell.drill));
+      else td.textContent = text;
+    });
+  });
+  const legend = $('matrix-legend'); legend.replaceChildren();
+  if (!matrix.count) { legend.textContent = 'Sem valores no intervalo para esta variável.'; return; }
+  const item = (text, className) => { const span = document.createElement('span'); span.className = className || ''; span.textContent = text; return span; };
+  const bar = item('', 'legend-bar'); bar.style.background = gradientCSS(matrix.scale);
+  const swatch = (text, className) => { const span = item(''); const mark = document.createElement('i'); mark.className = className; span.append(mark, text); return span; };
+  legend.append(item(`Mín. ${format(matrix.min, matrix.unit)}`), bar, item(`Máx. ${format(matrix.max, matrix.unit)}`),
+    swatch('sem dados', 'legend-empty'), swatch('máximo e mínimo do período', 'legend-extreme'));
 }
-async function loadComparison() {
-  comparisonController?.abort();
-  const controller = new AbortController(); comparisonController = controller;
-  $('history-comparison').hidden = true;
-  $('comparison-status').textContent = 'Carregando a referência 1991–2020…';
-  try {
-    const baseline = await history(location, '1991-01-01', '2020-12-31', controller.signal,
-      text => { if (!controller.signal.aborted) $('comparison-status').textContent = `Referência histórica: ${text}`; });
-    if (controller.signal.aborted) return;
-    const comparison = compare(historyRows, climatology(baseline));
-    const output = $('history-comparison'); output.replaceChildren();
-    for (const [key, label, unit] of [['precip', 'Chuva', 'mm'], ['mean', 'Temperatura média', '°C']]) {
-      const item = comparison[key];
-      const text = document.createElement('p');
-      const direction = item.delta > 0 ? 'acima' : item.delta < 0 ? 'abaixo' : 'igual à média';
-      text.textContent = item.reference === null ? `${label}: referência indisponível para todos os dias com dados.`
-        : `${label}: ${format(Math.abs(item.delta), unit)} ${direction}${item.delta === 0 ? '' : ' da média histórica'}. Referência: ${format(item.reference, unit)} · ${item.days} dias comparados.`;
-      output.append(text);
-    }
-    output.hidden = false;
-    $('comparison-status').textContent = 'Comparação com os mesmos dias do calendário em 1991–2020, apenas onde há dados na consulta.';
-  } catch (error) { if (!controller.signal.aborted) $('comparison-status').textContent = `Comparação indisponível: ${error.message} Desmarque e marque a opção para tentar novamente.`; }
+function choose(key, value) {
+  const before = filters.start + filters.end;
+  if (!takeDates()) return;
+  filters[key] = value;
+  if (filters.start + filters.end !== before || $('history-content').hidden) loadHistory();
+  else { syncFilters(); renderMatrix(); }
 }
 $('history-form').addEventListener('submit', event => { event.preventDefault(); if (takeDates()) loadHistory(); });
 $('history-retry').addEventListener('click', loadHistory);
-document.querySelectorAll('[data-group]').forEach(button => button.addEventListener('click', () => {
-  if (!takeDates()) return;
-  filters.group = button.dataset.group;
-  loadHistory();
-}));
+document.querySelectorAll('[data-layout]').forEach(button => button.addEventListener('click', () => choose('layout', button.dataset.layout)));
+document.querySelectorAll('[data-metric]').forEach(button => button.addEventListener('click', () => choose('metric', button.dataset.metric)));
 document.querySelectorAll('[data-range]').forEach(button => button.addEventListener('click', () => {
   const today = todayIn(location.timezone), year = Number(today.slice(0, 4));
   const kind = button.dataset.range;
   filters.end = kind === 'last-year' ? `${year - 1}-12-31` : kind === '30' ? addDays(today, -5) : today;
   filters.start = kind === 'last-year' ? `${year - 1}-01-01` : kind === 'year' ? `${year}-01-01` : kind === 'month' ? today.slice(0, 7) + '-01' : addDays(filters.end, -29);
-  filters.group = ['year', 'last-year'].includes(kind) ? 'month' : 'day';
+  filters.layout = ['year', 'last-year'].includes(kind) ? 'year-month' : 'month-day';
   loadHistory();
 }));
 function shiftRange(direction) {
@@ -282,26 +282,14 @@ function shiftRange(direction) {
 }
 $('range-prev').addEventListener('click', () => shiftRange(-1));
 $('range-next').addEventListener('click', () => shiftRange(1));
-$('page-prev').addEventListener('click', () => { page--; renderHistoryPage(); });
-$('page-next').addEventListener('click', () => { page++; renderHistoryPage(); });
-$('compare-normal').addEventListener('change', () => {
-  if ($('compare-normal').checked) loadComparison();
-  else { comparisonController?.abort(); $('history-comparison').hidden = true; $('comparison-status').textContent = ''; }
-});
-$('download-csv').addEventListener('click', () => {
-  const url = URL.createObjectURL(new Blob([csv(grouped)], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a'); link.href = url;
-  link.download = `clima-${location.latitude}-${location.longitude}-${filters.start}-${filters.end}-${filters.group}.csv`;
-  document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
-});
 
 function chooseLocation(value) {
-  geoRequest++; searchController?.abort(); historyController?.abort(); comparisonController?.abort();
+  geoRequest++; searchController?.abort(); historyController?.abort();
   location = value; save('clima-location', location); updateLocationLabel();
   const today = todayIn(location.timezone);
   if (filters.end > today) filters.end = today;
   if (filters.start > filters.end) filters.start = filters.end;
-  historyLoaded = false; historyRows = []; grouped = [];
+  historyLoaded = false; historyRows = [];
   $('history-content').hidden = true;
   $('location-dialog').close();
   loadForecast();
