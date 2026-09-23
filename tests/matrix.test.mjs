@@ -1,19 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMatrix, cellStyle, columnsFor, gradientCSS, luminance, LAYOUT_FROM_GROUP } from '../docs/js/matrix.mjs';
+import { buildMatrix, cellStyle, columnsFor, gradientCSS, luminance, LAYOUT_FROM_GROUP, periodRange } from '../docs/js/matrix.mjs';
 import { datesBetween } from '../docs/js/weather-data.mjs';
 
 const daily = (start, end, extra = {}) => datesBetween(start, end).map(date => ({ date, precip: 1, mean: 20, max: 30, min: 5, sun: 8, ...extra }));
 
-test('ano × mês posiciona meses, deixa em branco o que está fora do intervalo e abre os dias', () => {
+test('ano × mês posiciona meses, mais recentes em cima, em branco fora do intervalo e abre os dias', () => {
   const matrix = buildMatrix(daily('2025-01-01', '2026-03-31'), '2025-01-01', '2026-03-31', 'year-month', 'precip');
   assert.equal(matrix.columns.length, 12);
-  assert.deepEqual(matrix.rows.map(row => row.key), ['2025', '2026']);
-  assert.equal(matrix.rows[0].cells[1].value, 28);
-  assert.deepEqual(matrix.rows[0].cells[1].drill, { layout: 'month-day', start: '2025-02-01', end: '2025-02-28' });
-  assert.deepEqual(matrix.rows[0].drill, { layout: 'month-day', start: '2025-01-01', end: '2025-12-31' });
-  assert.deepEqual(matrix.rows[1].cells.slice(3), Array(9).fill(null));
-  assert.equal(matrix.rows[1].cells[2].title, 'março de 2026');
+  assert.deepEqual(matrix.rows.map(row => row.key), ['2026', '2025']);
+  const [recent, older] = matrix.rows;
+  assert.equal(older.cells[1].value, 28);
+  assert.deepEqual(older.cells[1].drill, { layout: 'month-day', start: '2025-02-01', end: '2025-02-28' });
+  assert.deepEqual(older.drill, { layout: 'month-day', start: '2025-01-01', end: '2025-12-31' });
+  assert.deepEqual(recent.cells.slice(3), Array(9).fill(null));
+  assert.equal(recent.cells[2].title, 'março de 2026');
+  assert.deepEqual(recent.drill, { layout: 'month-day', start: '2026-01-01', end: '2026-03-31' });
   assert.equal(matrix.unit, 'mm');
   assert.equal(matrix.count, 15);
 });
@@ -21,15 +23,15 @@ test('ano × mês posiciona meses, deixa em branco o que está fora do intervalo
 test('ano × semana segue o ano ISO da quinta-feira', () => {
   const matrix = buildMatrix([], '2024-12-23', '2025-01-12', 'year-week', 'mean');
   assert.equal(matrix.columns.length, 53);
-  assert.deepEqual(matrix.rows.map(row => row.key), ['2024', '2025']);
+  assert.deepEqual(matrix.rows.map(row => row.key), ['2025', '2024']);
   const filled = row => row.cells.map((cell, i) => cell ? i : null).filter(i => i !== null);
-  assert.deepEqual(filled(matrix.rows[0]), [51]);
-  assert.deepEqual(filled(matrix.rows[1]), [0, 1]);
-  const first = matrix.rows[1].cells[0];
+  assert.deepEqual(filled(matrix.rows[1]), [51]);
+  assert.deepEqual(filled(matrix.rows[0]), [0, 1]);
+  const first = matrix.rows[0].cells[0];
   assert.equal(first.periodStart, '2024-12-30');
   assert.equal(first.value, null);
   assert.deepEqual(first.drill, { layout: 'week-weekday', start: '2024-12-30', end: '2025-01-05' });
-  assert.deepEqual(matrix.rows[1].drill, { layout: 'week-weekday', start: '2024-12-30', end: '2025-01-12' });
+  assert.deepEqual(matrix.rows[0].drill, { layout: 'week-weekday', start: '2024-12-30', end: '2025-01-12' });
 });
 
 test('mês × dia não tem detalhamento, marca dias inexistentes e distingue ausência de zero', () => {
@@ -49,14 +51,14 @@ test('mês × dia não tem detalhamento, marca dias inexistentes e distingue aus
   assert.equal(matrix.rows[0].cells[0].title, 'sábado, 01/02/2025');
 });
 
-test('semana × dia começa na segunda e rotula pela segunda-feira', () => {
+test('semana × dia começa na segunda, rotula pela segunda-feira e ordena da mais recente', () => {
   const matrix = buildMatrix([], '2025-01-01', '2025-01-07', 'week-weekday', 'min');
   assert.deepEqual(matrix.columns.map(column => column.label), ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']);
-  assert.deepEqual(matrix.rows.map(row => row.key), ['2024-12-30', '2025-01-06']);
-  assert.equal(matrix.rows[0].label, '30/12/2024');
-  assert.deepEqual(matrix.rows[0].cells.slice(0, 2), [null, null]);
-  assert.equal(matrix.rows[0].cells.slice(2).every(Boolean), true);
-  assert.deepEqual(matrix.rows[1].cells.slice(2), Array(5).fill(null));
+  assert.deepEqual(matrix.rows.map(row => row.key), ['2025-01-06', '2024-12-30']);
+  assert.equal(matrix.rows[1].label, '30/12/2024');
+  assert.deepEqual(matrix.rows[1].cells.slice(0, 2), [null, null]);
+  assert.equal(matrix.rows[1].cells.slice(2).every(Boolean), true);
+  assert.deepEqual(matrix.rows[0].cells.slice(2), Array(5).fill(null));
 });
 
 test('horas de sol são média diária e a unidade acompanha', () => {
@@ -94,6 +96,15 @@ test('escala de cor mantém texto legível e trata intervalo sem variação', ()
   assert.equal(luminance([0, 0, 0]), 0);
   assert.match(gradientCSS('sun'), /^linear-gradient\(90deg, rgb\(255, 255, 255\) 0%, .*rgb\(154, 63, 12\) 100%\)$/);
   assert.equal(columnsFor('year-week')[52].label, 'S53');
+});
+
+test('períodos predefinidos cobrem anos civis até hoje e nunca antes de 1940', () => {
+  assert.deepEqual(periodRange('20', '2026-09-23'), { start: '2007-01-01', end: '2026-09-23' });
+  assert.deepEqual(periodRange('1', '2026-09-23'), { start: '2026-01-01', end: '2026-09-23' });
+  assert.deepEqual(periodRange('5', '2026-01-01'), { start: '2022-01-01', end: '2026-01-01' });
+  assert.deepEqual(periodRange('all', '2026-09-23'), { start: '1940-01-01', end: '2026-09-23' });
+  assert.deepEqual(periodRange('100', '2026-09-23'), { start: '1940-01-01', end: '2026-09-23' });
+  assert.equal(periodRange('custom', '2026-09-23'), null);
 });
 
 test('filtro antigo por agrupamento migra para uma leitura', () => {

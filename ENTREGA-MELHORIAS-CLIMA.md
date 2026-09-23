@@ -36,6 +36,7 @@ A revisão encontrou dependência indevida da previsão para identificar o fuso 
 A aba Histórico foi refeita como tabela dinâmica: quatro leituras (Ano × Mês, Ano × Semana, Mês × Dia, Semana × Dia) e cinco variáveis (chuva, média, mínima, máxima, horas de sol), com gradiente de cor sobre os valores visíveis, contorno nos extremos e detalhamento por toque até os dias.
 
 - Removidos: cards de resumo, gráficos, lista, tabela linear, paginação, comparação com 1991–2020 e exportação CSV.
+- Período: padrão de 20 anos civis em Ano × Mês, mais recentes em cima; seletor com 1, 5, 10, 20 anos, Todos (desde 1940) e Personalizado (datas livres). Os atalhos anteriores (30 dias, este mês, este ano, ano passado) saíram.
 - Novo: horas de sol (`sunshine_duration` do ERA5, média diária). O cache passou a `clima-history-v2`; o antigo é apagado no primeiro acesso.
-- Validação: 15 testes de cálculos (matriz, semanas ISO, escala de cor, horas de sol) e 18 testes de interface (nove cenários em Chromium e WebKit com emulação de iPhone), incluindo 320 px com texto a 200 %, cabeçalhos fixos e controles de 44 px.
-- Limitações: Ano × Semana tem 53 colunas e exige rolagem horizontal; intervalos muito longos em Mês × Dia renderizam milhares de células. Ranking de extremos considera só o que está visível.
+- Validação: 16 testes de cálculos (matriz, semanas ISO, períodos, escala de cor, horas de sol) e 22 testes de interface (onze cenários em Chromium e WebKit com emulação de iPhone), incluindo 320 px com texto a 200 %, cabeçalhos fixos e controles de 44 px.
+- Limitações: Ano × Semana tem 53 colunas e exige rolagem horizontal; “Todos” em Mês × Dia renderiza dezenas de milhares de células. A primeira abertura baixa 20 anos (duas consultas) e “Todos” baixa 87 anos (nove consultas); depois fica em cache. Ranking de extremos considera só o que está visível.

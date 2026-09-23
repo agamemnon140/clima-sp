@@ -177,7 +177,6 @@ fieldset { border: 0; padding: 0; margin: 0 0 1rem; min-width: 0; }
 legend { font-weight: 600; padding: 0; margin-bottom: .5rem; }
 .date-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 .date-fields label { display: grid; gap: .3rem; min-width: 0; }
-.quick-ranges { display: flex; flex-wrap: wrap; gap: .5rem; margin: .25rem 0 1rem; }
 .segmented { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.2rem), 1fr)); gap: .35rem; }
 .segmented button { padding: .5rem .2rem; }
 .period-navigation { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
@@ -216,6 +215,10 @@ legend { font-weight: 600; padding: 0; margin-bottom: .5rem; }
 .legend-extreme { outline: 2px solid #1f2d3a; outline-offset: -2px; background: #fff; }
 .segmented-layout { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr)); }
 .segmented-metric { grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr)); }
+.segmented-period { grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr)); }
+.period-hint { margin: .5rem 0 0; }
+#custom-range { border: 1px solid #d7e3ee; border-radius: 12px; padding: .9rem .9rem 0; margin-bottom: 1rem; background: #f7fafc; }
+#custom-range .period-navigation { margin: .5rem 0 .9rem; }
 th, td { font-size: 1rem; }
 caption { text-align: left; padding: .5rem 0; color: #4c5e6e; }
 summary { min-height: 44px; padding: .5rem 0; font-size: 1rem; }

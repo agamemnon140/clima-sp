@@ -19,6 +19,12 @@ mínima, máxima ou horas de sol. Há quatro leituras: **Ano × Mês**, **Ano ×
 médias diárias; máxima e mínima são extremos absolutos. Semanas vão de segunda a domingo
 e, em Ano × Semana, pertencem ao ano da sua quinta-feira (semana ISO).
 
+Por padrão a matriz mostra os últimos 20 anos civis em Ano × Mês, do ano mais recente
+ao mais antigo (as linhas sempre vão do período mais novo para o mais velho). O seletor
+de período oferece 1, 5, 10 e 20 anos (anos civis até hoje), Todos (desde 1940) e
+Personalizado, que revela as datas livres com navegação para o intervalo anterior e o
+próximo. Abrir um mês, semana ou ano pela matriz passa o período para Personalizado.
+
 As cores usam um gradiente contínuo escalado sobre os valores visíveis na matriz; o máximo
 e o mínimo do que está na tela recebem contorno (sólido e tracejado). Dias sem dados aparecem
 hachurados com “–”, nunca como zero; dias inexistentes ficam em branco. Cada célula informa,

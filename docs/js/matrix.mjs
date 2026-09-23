@@ -21,6 +21,18 @@ export const LAYOUTS = {
   'week-weekday': { label: 'Semana × Dia', rowName: 'Semana', group: 'day', drill: null, columns: 7 },
 };
 export const LAYOUT_FROM_GROUP = { day: 'month-day', week: 'week-weekday', month: 'year-month', year: 'year-month' };
+// Períodos predefinidos: anos civis completos até hoje, incluindo o ano corrente.
+export const PERIODS = [
+  { key: '1', label: '1 ano' }, { key: '5', label: '5 anos' }, { key: '10', label: '10 anos' }, { key: '20', label: '20 anos' },
+  { key: 'all', label: 'Todos' }, { key: 'custom', label: 'Personalizado' },
+];
+export const DEFAULT_PERIOD = '20';
+export function periodRange(period, today) {
+  if (period === 'all') return { start: '1940-01-01', end: today };
+  const years = Number(period);
+  if (!Number.isInteger(years) || years < 1) return null;
+  return { start: `${Math.max(1940, Number(today.slice(0, 4)) - years + 1)}-01-01`, end: today };
+}
 
 export function dateLabel(date) {
   return `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`;
@@ -88,7 +100,7 @@ export function buildMatrix(rows, start, end, layout, metric) {
       drill: spec.drill ? { layout: spec.drill, start: bucket.start, end: bucket.end } : null,
     };
   }
-  const matrixRows = [...byRow.values()].sort((a, b) => a.key.localeCompare(b.key));
+  const matrixRows = [...byRow.values()].sort((a, b) => b.key.localeCompare(a.key)); // Mais recentes em cima.
   let min = null;
   let max = null;
   let minCell = null;

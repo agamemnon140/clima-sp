@@ -15,16 +15,18 @@ async function mockWeather(page, { archiveFail = false, seasonalFail = false, fo
     const start = archive ? url.searchParams.get('start_date') : '2026-09-23';
     const end = archive ? url.searchParams.get('end_date') : addDays(start, 15);
     const time = datesBetween(start, end);
-    const old = Number(start.slice(0, 4)) < 2021;
-    // Chuva = dia do mês: cada mês tem soma distinta e extremos previsíveis.
+    // Anos antes de 2021 sao "antigos" (valores menores); chuva = dia do mes nos demais, com extremos previsiveis.
+    const old = date => Number(date.slice(0, 4)) < 2021;
     return route.fulfill({ json: { timezone: Number(url.searchParams.get('latitude')) > 0 ? geoTimezone : 'America/Sao_Paulo', daily: { time,
-      temperature_2m_mean: time.map(() => old ? 10 : 20), temperature_2m_max: time.map(() => 30),
-      temperature_2m_min: time.map(() => 5), precipitation_sum: time.map(date => old ? 2 : Number(date.slice(8, 10))),
-      sunshine_duration: time.map(() => old ? 18000 : 28800) } } });
+      temperature_2m_mean: time.map(date => old(date) ? 10 : 20), temperature_2m_max: time.map(() => 30),
+      temperature_2m_min: time.map(() => 5), precipitation_sum: time.map(date => old(date) ? 2 : Number(date.slice(8, 10))),
+      sunshine_duration: time.map(date => old(date) ? 18000 : 28800) } } });
   });
   if (seasonalFail) await page.route('**/data/mensal.json', route => route.fulfill({ status: 503, body: 'unavailable' }));
 }
 async function queryDates(page, start, end) {
+  await page.getByRole('button', { name: 'Personalizado', exact: true }).click();
+  await expect(page.locator('#custom-range')).toBeVisible();
   await page.locator('#history-start').fill(start); await page.locator('#history-end').fill(end);
   await page.getByRole('button', { name: 'Consultar', exact: true }).click();
   await expect(page.locator('#history-content')).toBeVisible();
@@ -36,12 +38,37 @@ async function noOverflow(page) {
 }
 const pressed = (page, selector) => expect(page.locator(selector)).toHaveAttribute('aria-pressed', 'true');
 
+test('padrão mostra 20 anos em ano × mês, mais recentes em cima, e o seletor de período troca o intervalo', async ({ page }) => {
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await mockWeather(page); await page.goto('/#historico');
+  await expect(page.locator('#history-content')).toBeVisible();
+  await pressed(page, '[data-period="20"]'); await pressed(page, '[data-layout="year-month"]');
+  await expect(page.locator('#custom-range')).toBeHidden();
+  await expect(page.locator('#matrix-caption')).toContainText('01/01/2007 a 23/09/2026');
+  await expect(page.locator('#history-matrix tbody tr')).toHaveCount(20);
+  await expect(page.locator('#history-matrix tbody th').first()).toHaveText('2026');
+  await expect(page.locator('#history-matrix tbody th').last()).toHaveText('2007');
+  await page.getByRole('button', { name: '5 anos', exact: true }).click();
+  await expect(page.locator('#history-matrix tbody tr')).toHaveCount(5);
+  await expect(page.locator('#matrix-caption')).toContainText('01/01/2022 a 23/09/2026');
+  await page.getByRole('button', { name: 'Todos', exact: true }).click();
+  await expect(page.locator('#history-matrix tbody tr')).toHaveCount(87);
+  await expect(page.locator('#history-matrix tbody th').last()).toHaveText('1940');
+  await page.getByRole('button', { name: 'Personalizado', exact: true }).click();
+  await expect(page.locator('#custom-range')).toBeVisible();
+  await expect(page.locator('#history-start')).toHaveValue('1940-01-01');
+  await expect(page.locator('#history-end')).toHaveValue('2026-09-23');
+  await page.reload(); await expect(page.locator('#history-content')).toBeVisible();
+  await pressed(page, '[data-period="custom"]');
+  await expect(page.locator('#history-matrix tbody tr')).toHaveCount(87);
+  expect(errors).toEqual([]);
+});
+
 test('matriz ano × mês marca extremos, abre o ano e o mês em dias e preserva os filtros', async ({ page }) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await mockWeather(page); await page.goto('/#historico');
   await expect(page.locator('#history-content')).toBeVisible();
   await queryDates(page, '2025-01-01', '2025-12-31');
-  await page.getByRole('button', { name: 'Ano × Mês', exact: true }).click();
   await expect(page.locator('#history-matrix thead th')).toHaveCount(13);
   await expect(page.locator('#history-matrix tbody tr')).toHaveCount(1);
   await expect(page.locator('#matrix-caption')).toContainText('Chuva (mm) · Ano × Mês · 01/01/2025 a 31/12/2025');
@@ -54,6 +81,7 @@ test('matriz ano × mês marca extremos, abre o ano e o mês em dias e preserva 
   await page.getByRole('button', { name: 'Ano 2025. Abrir dias', exact: true }).click();
   await pressed(page, '[data-layout="month-day"]');
   await expect(page.locator('#history-matrix tbody tr')).toHaveCount(12);
+  await expect(page.locator('#history-matrix tbody th').first()).toHaveText('dez/2025');
   await expect(page.locator('#history-matrix thead th')).toHaveCount(32);
   await expect(page.locator('#history-matrix tbody button')).toHaveCount(0);
   await page.getByRole('button', { name: 'Ano × Mês', exact: true }).click();
@@ -69,6 +97,7 @@ test('matriz ano × mês marca extremos, abre o ano e o mês em dias e preserva 
   await page.reload(); await expect(page.locator('#history-content')).toBeVisible();
   await expect(page.locator('#history-start')).toHaveValue('2025-02-01');
   await pressed(page, '[data-layout="month-day"]');
+  await pressed(page, '[data-period="custom"]');
   expect(errors).toEqual([]);
 });
 
@@ -79,7 +108,7 @@ test('ano × semana segue semanas ISO e abre a semana em dias de segunda a domin
   await page.getByRole('button', { name: 'Ano × Semana', exact: true }).click();
   await expect(page.locator('#history-matrix thead th')).toHaveCount(54);
   await expect(page.locator('#history-matrix tbody tr')).toHaveCount(2);
-  await expect(page.locator('#history-matrix tbody th')).toHaveText(['2024', '2025']);
+  await expect(page.locator('#history-matrix tbody th')).toHaveText(['2025', '2024']);
   await page.getByRole('button', { name: /^Semana de 30\/12\/2024 a 05\/01\/2025/ }).click();
   await pressed(page, '[data-layout="week-weekday"]');
   await expect(page.locator('#history-start')).toHaveValue('2024-12-30');
@@ -89,19 +118,24 @@ test('ano × semana segue semanas ISO e abre a semana em dias de segunda a domin
   await expect(page.locator('#history-matrix td.heat')).toHaveText(['30,0', '31,0', '1,0', '2,0', '3,0', '4,0', '5,0']);
 });
 
-test('troca de variável recolore sem nova consulta e mostra horas de sol', async ({ page }) => {
+test('troca de variável ou leitura recolore sem nova consulta e mostra horas de sol', async ({ page }) => {
   await mockWeather(page); await page.goto('/#historico');
   await expect(page.locator('#history-content')).toBeVisible();
   let requests = 0; page.on('request', request => { if (request.url().includes('archive-api')) requests++; });
   await page.getByRole('button', { name: 'Horas de sol', exact: true }).click();
   await expect(page.locator('#matrix-caption')).toContainText('Horas de sol (h/dia)');
   await expect(page.locator('#history-matrix td.heat').first()).toHaveText('8,0');
-  await expect(page.locator('#matrix-legend')).toContainText('8,0 h/dia');
+  await expect(page.locator('#history-matrix td.heat').last()).toHaveText('5,0');
+  await expect(page.locator('#matrix-legend')).toContainText('Mín. 5,0 h/dia');
+  await expect(page.locator('#matrix-legend')).toContainText('Máx. 8,0 h/dia');
   await page.getByRole('button', { name: 'Mínima', exact: true }).click();
   await expect(page.locator('#matrix-caption')).toContainText('Mínima (°C)');
   await expect(page.locator('#history-matrix td.heat').first()).toHaveText('5,0');
+  await page.getByRole('button', { name: '1 ano', exact: true }).click();
+  await expect(page.locator('#history-matrix tbody tr')).toHaveCount(1);
   await page.getByRole('button', { name: 'Semana × Dia', exact: true }).click();
   await expect(page.locator('#history-matrix thead th')).toHaveCount(8);
+  await expect(page.locator('#history-matrix tbody th').first()).toHaveText('21/09/2026');
   expect(requests).toBe(0);
 });
 
@@ -142,15 +176,16 @@ test('iPhone estreito e texto ampliado preservam leitura e não transbordam', as
   await mockWeather(page); await page.setViewportSize({ width: 375, height: 812 }); await page.goto('/#historico');
   await expect(page.locator('#history-content')).toBeVisible();
   await noOverflow(page);
-  await page.getByRole('button', { name: 'Ano passado', exact: true }).click();
-  await expect(page.locator('#history-matrix tbody button')).toHaveCount(13);
-  const controls = await page.locator('#history-form button, #history-form input, .app-nav a, #history-matrix button').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().height));
+  await expect(page.locator('#history-matrix tbody button')).toHaveCount(20 * 13 - 3); // 2026 so tem nove meses
+  const controls = await page.locator('#history-form button:visible, #history-form input:visible, .app-nav a, #history-matrix button').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().height));
   expect(controls.every(height => height >= 44)).toBe(true);
   expect(await page.locator('#history-matrix thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
   expect(await page.locator('#history-matrix tbody th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
   await page.screenshot({ path: testInfo.outputPath('iphone-historico.png'), fullPage: true });
   await page.locator('#history-matrix').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('iphone-matriz.png') });
+  await page.getByRole('button', { name: 'Personalizado', exact: true }).click();
+  await noOverflow(page);
   await page.setViewportSize({ width: 320, height: 720 });
   await page.addStyleTag({ content: 'html { font-size: 200%; }' });
   for (const tab of ['historico', 'previsao', 'tendencias', 'sobre']) {
@@ -162,16 +197,22 @@ test('iPhone estreito e texto ampliado preservam leitura e não transbordam', as
 
 test('histórico atual distingue dias sem dados de dias inexistentes', async ({ page }) => {
   await mockWeather(page); await page.goto('/#historico'); await expect(page.locator('#history-content')).toBeVisible();
-  await page.getByRole('button', { name: 'Este mês', exact: true }).click();
+  await queryDates(page, '2026-09-01', '2026-09-23');
+  await page.getByRole('button', { name: 'Mês × Dia', exact: true }).click();
   await expect(page.locator('#history-status')).toContainText('Intervalo parcial');
   await expect(page.locator('#history-matrix td.empty')).toHaveCount(5); // 19 a 23/09 ainda sem publicação
   await expect(page.locator('#history-matrix td.blank')).toHaveCount(8); // 24 a 30/09 fora do intervalo e o dia 31 inexistente
   await expect(page.locator('#history-matrix td.empty').first()).toHaveAttribute('title', /sábado, 19\/09\/2026 · Sem dados/);
   await queryDates(page, '2025-01-01', '2025-03-31');
   await expect(page.locator('#history-matrix tbody tr')).toHaveCount(3);
+  await expect(page.locator('#history-matrix tbody th').first()).toHaveText('mar/2025');
   await page.getByRole('button', { name: 'Semana × Dia', exact: true }).click();
   await expect(page.locator('#history-matrix tbody tr')).toHaveCount(14);
-  await expect(page.locator('#history-matrix tbody th').first()).toHaveText('30/12/2024');
+  await expect(page.locator('#history-matrix tbody th').first()).toHaveText('31/03/2025');
+  await expect(page.locator('#history-matrix tbody th').last()).toHaveText('30/12/2024');
+  await page.locator('#range-prev').click();
+  await expect(page.locator('#history-start')).toHaveValue('2024-10-03');
+  await expect(page.locator('#history-end')).toHaveValue('2024-12-31');
 });
 
 test('navegação preserva a rolagem e o atalho de teclado mantém a aba atual', async ({ page }) => {
@@ -197,8 +238,10 @@ test('histórico resolve o fuso da geolocalização mesmo com previsão indispon
   await page.locator('#change-location').click(); await page.locator('#use-location').click();
   await expect(page.locator('#location-timezone')).toHaveText('Fuso: Asia/Tokyo');
   await expect(page.locator('#history-content')).toBeVisible();
+  await expect(page.locator('#matrix-caption')).toContainText('a 24/09/2026'); // "hoje" no fuso de Tóquio
   await expect(page.locator('#history-end')).toHaveAttribute('max', '2026-09-24');
-  await page.getByRole('button', { name: 'Este mês', exact: true }).click();
+  await page.getByRole('button', { name: 'Mês × Dia', exact: true }).click();
+  await queryDates(page, '2026-09-01', '2026-09-24');
   await expect(page.locator('#history-matrix td.empty')).toHaveCount(5); // 20 a 24/09 no fuso de Tóquio
   await expect(page.locator('#history-matrix td.blank')).toHaveCount(7);
   await expect(page.locator('#history-status')).toContainText('19/09/2026');
