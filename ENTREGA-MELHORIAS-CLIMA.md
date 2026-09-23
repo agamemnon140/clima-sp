@@ -31,3 +31,11 @@ A revisão encontrou dependência indevida da previsão para identificar o fuso 
 - O app depende da API pública do Open-Meteo; a primeira consulta de intervalos longos ou da referência histórica pode demorar e está sujeita aos limites do serviço.
 - O Histórico fixa ERA5. O modelo sazonal legado usa a seleção automática do Open-Meteo e continua específico de São Paulo. A fonte foi identificada corretamente; o modelo não foi reconstruído nesta entrega.
 - Para testar localmente, sirva `docs` por HTTP. Comandos de teste e detalhes dos cálculos estão no README.
+
+## Atualização — Histórico em matriz (23/09/2026)
+A aba Histórico foi refeita como tabela dinâmica: quatro leituras (Ano × Mês, Ano × Semana, Mês × Dia, Semana × Dia) e cinco variáveis (chuva, média, mínima, máxima, horas de sol), com gradiente de cor sobre os valores visíveis, contorno nos extremos e detalhamento por toque até os dias.
+
+- Removidos: cards de resumo, gráficos, lista, tabela linear, paginação, comparação com 1991–2020 e exportação CSV.
+- Novo: horas de sol (`sunshine_duration` do ERA5, média diária). O cache passou a `clima-history-v2`; o antigo é apagado no primeiro acesso.
+- Validação: 15 testes de cálculos (matriz, semanas ISO, escala de cor, horas de sol) e 18 testes de interface (nove cenários em Chromium e WebKit com emulação de iPhone), incluindo 320 px com texto a 200 %, cabeçalhos fixos e controles de 44 px.
+- Limitações: Ano × Semana tem 53 colunas e exige rolagem horizontal; intervalos muito longos em Mês × Dia renderizam milhares de células. Ranking de extremos considera só o que está visível.
