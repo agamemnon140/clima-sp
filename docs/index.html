@@ -2,30 +2,92 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>clima-sp — Previsão climática sazonal para a RMSP</title>
-  <meta name="description" content="Previsão probabilística de chuva e temperatura para a Região Metropolitana de São Paulo em 3, 6, 12 e 24 meses, com validação honesta da habilidade do modelo.">
-  <meta name="theme-color" content="#1c5d99">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Clima — previsão e histórico</title>
+  <meta name="description" content="Consulte chuva, temperatura média, máxima e mínima por dia, semana, mês e ano. Previsão do tempo e tendências climáticas de São Paulo.">
+  <meta name="theme-color" content="#123c63">
   <link rel="icon" type="image/svg+xml" href="logo.svg">
-  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="clima-sp">
-  <link rel="stylesheet" href="css/style.css?v=6">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Clima">
+  <link rel="stylesheet" href="css/style.css?v=7">
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script defer src="js/app.js?v=7"></script>
+  <script type="module" src="js/explorer.mjs?v=7"></script>
 </head>
 <body>
-<header>
-  <img src="logo.svg" alt="" class="logo" width="72" height="72">
-  <h1>clima-sp</h1>
-  <p class="subtitulo">Previsão climática sazonal probabilística para a Região Metropolitana de São Paulo</p>
-  <p id="atualizacao" class="atualizacao"></p>
+<a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+<header class="app-header">
+  <div class="brand"><img src="logo.svg" alt="" width="44" height="44"><div><h1>Clima</h1><p>O tempo, com perspectiva.</p></div></div>
+  <p class="header-caption">Previsão · Histórico · Tendências</p>
 </header>
+<nav class="app-nav" aria-label="Navegação principal">
+  <a href="#previsao" data-tab="previsao" aria-current="page"><span aria-hidden="true">☀</span>Previsão</a>
+  <a href="#historico" data-tab="historico"><span aria-hidden="true">▦</span>Histórico</a>
+  <a href="#tendencias" data-tab="tendencias"><span aria-hidden="true">↗</span>Tendências</a>
+  <a href="#sobre" data-tab="sobre"><span aria-hidden="true">ⓘ</span>Sobre</a>
+</nav>
+<main id="conteudo" tabindex="-1">
+  <noscript><p class="aviso">Ative o JavaScript para consultar os dados interativos.</p></noscript>
+  <section class="location-bar" id="location-bar" aria-label="Localização da consulta">
+    <div><span class="eyebrow">Local da consulta</span><strong id="location-name">São Paulo, Brasil</strong><span id="location-timezone" class="muted"></span></div>
+    <button id="change-location" type="button">Alterar local</button>
+  </section>
+  <dialog id="location-dialog" aria-labelledby="location-title">
+    <div class="dialog-header"><h2 id="location-title">Escolher localização</h2><button id="close-location" aria-label="Fechar localização" type="button">Fechar</button></div>
+    <form id="location-search" class="search-form"><label for="city-query">Cidade</label><div class="search-row"><input id="city-query" type="search" minlength="2" maxlength="100" placeholder="Ex.: Campinas" required autocomplete="off"><button type="submit">Buscar</button></div></form>
+    <p id="location-status" role="status"></p><div id="city-results" class="city-results"></div>
+    <button id="use-location" type="button">Usar minha localização</button>
+    <h3>Favoritos</h3><div id="favorites" class="favorites"></div><button id="save-location" type="button">Salvar local atual nos favoritos</button>
+    <p class="muted">A escolha vale para Previsão e Histórico. Tendências usa o modelo de São Paulo.</p>
+  </dialog>
 
-<main>
-  <section id="aviso" class="aviso">
+  <div id="previsao" class="tab-panel" aria-labelledby="forecast-title">
+    <section>
+      <div class="section-heading"><div><span class="eyebrow">Para planejar os próximos dias</span><h2 id="forecast-title" tabindex="-1">Previsão do tempo</h2></div><button id="forecast-retry" type="button">Atualizar</button></div>
+      <p id="forecast-status" role="status">Carregando a previsão…</p>
+      <div id="forecast-content" hidden>
+        <h3 id="forecast-summary-title">Hoje</h3><div id="forecast-summary" class="metrics"></div>
+        <div class="chart-card"><h3>Temperatura</h3><div class="chart-frame"><canvas id="forecast-temp" role="img" aria-label="Previsão de temperatura; valores disponíveis na lista abaixo"></canvas></div></div>
+        <div class="chart-card"><h3>Chuva por dia</h3><div class="chart-frame"><canvas id="forecast-rain" role="img" aria-label="Previsão de precipitação; valores disponíveis na lista abaixo"></canvas></div></div>
+        <p class="chart-hint">Toque em um ponto para consultar seus valores.</p><p id="forecast-selection" class="selection" aria-live="polite"></p>
+        <h3>Dia a dia</h3><div id="forecast-list" class="period-list"></div>
+      </div>
+      <details><summary>Como interpretar a previsão</summary><p>Valores previstos pelo Open-Meteo, não medições. A incerteza aumenta nos dias mais distantes. A chuva é o acumulado em mm; a média de temperatura é diferente da média entre máxima e mínima.</p><p>Para os próximos meses em São Paulo, consulte <a href="#tendencias">Tendências</a>.</p></details>
+    </section>
+  </div>
+
+  <div id="historico" class="tab-panel" hidden aria-labelledby="history-title">
+    <section>
+      <span class="eyebrow">Explore o que já aconteceu</span><h2 id="history-title" tabindex="-1">Histórico do clima</h2>
+      <form id="history-form" class="filter-card">
+        <fieldset><legend>Intervalo consultado</legend><div class="date-fields"><label>De<input id="history-start" type="date" min="1940-01-01" required></label><label>Até<input id="history-end" type="date" min="1940-01-01" required></label></div></fieldset>
+        <div class="quick-ranges" aria-label="Atalhos de intervalo"><button type="button" data-range="30">Últimos 30 dias</button><button type="button" data-range="month">Este mês</button><button type="button" data-range="year">Este ano</button><button type="button" data-range="last-year">Ano passado</button></div>
+        <fieldset><legend>Agrupar por</legend><div class="segmented" id="history-groups"><button type="button" data-group="day" aria-pressed="true">Dia</button><button type="button" data-group="week" aria-pressed="false">Semana</button><button type="button" data-group="month" aria-pressed="false">Mês</button><button type="button" data-group="year" aria-pressed="false">Ano</button></div></fieldset>
+        <div class="period-navigation"><button id="range-prev" type="button" aria-label="Intervalo anterior">← Anterior</button><button type="submit" class="primary">Consultar</button><button id="range-next" type="button" aria-label="Próximo intervalo">Próximo →</button></div>
+      </form>
+      <p id="history-status" role="status"></p><button id="history-retry" type="button" hidden>Tentar novamente</button>
+      <div id="history-content" hidden>
+        <h3 id="history-summary-title"></h3><div id="history-summary" class="metrics"></div>
+        <label class="checkbox-label"><input id="compare-normal" type="checkbox">Comparar com a média histórica de 1991–2020</label><p id="comparison-status" role="status"></p><div id="history-comparison" class="comparison" hidden></div>
+        <div class="chart-card"><h3>Temperatura por período</h3><div class="chart-frame"><canvas id="history-temp" role="img" aria-label="Temperatura histórica; valores disponíveis na lista e na tabela abaixo"></canvas></div></div>
+        <div class="chart-card"><h3>Chuva acumulada por período</h3><div class="chart-frame"><canvas id="history-rain" role="img" aria-label="Precipitação histórica; valores disponíveis na lista e na tabela abaixo"></canvas></div></div>
+        <p class="chart-hint">Toque em um ponto para consultar seus valores. Os gráficos acompanham a página da lista.</p><p id="history-selection" class="selection" aria-live="polite"></p>
+        <div class="section-heading"><h3>Valores por período</h3><button id="download-csv" type="button">Baixar CSV</button></div>
+        <p>Selecione um ano para abrir seus meses, ou um mês ou semana para abrir seus dias.</p>
+        <div id="history-list" class="period-list history-mobile-list"></div>
+        <details class="history-table-details"><summary>Tabela completa desta página</summary><div class="table-scroll" role="region" aria-label="Tabela histórica, deslize para ver todas as colunas" tabindex="0"><table id="history-table"></table></div></details>
+        <div class="pagination"><button id="page-prev" type="button">← Anterior</button><span id="page-status" role="status"></span><button id="page-next" type="button">Próxima →</button></div>
+      </div>
+      <details><summary>Fonte, cobertura e cálculo</summary><p>Histórico ERA5 via <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener">Open-Meteo</a>: reanálise em grade, não medição de uma estação. Publicação com cerca de cinco dias de atraso; dados recentes podem ser revisados. O dia segue o fuso da localização.</p><p>Chuva: soma dos dias. Temperatura média: média das médias diárias disponíveis. Máxima e mínima: extremos absolutos do período. Semanas vão de segunda a domingo. Falhas aparecem como “Sem dados”, nunca como zero.</p><p>“Parcial” indica datas sem cobertura ou um período recortado pela seleção. A comparação usa os mesmos dias com dados, em cada ano de 1991–2020; 29 de fevereiro considera apenas anos bissextos. Ela compara chuva e média, não extremos.</p><p>Consultas ficam em cache neste dispositivo. A primeira consulta de um intervalo longo ou da referência histórica pode demorar.</p></details>
+    </section>
+  </div>
+
+  <div id="tendencias" class="tab-panel" hidden aria-labelledby="trends-title">
+    <section class="scope-note"><span class="eyebrow">Modelo regional</span><h2 id="trends-title" tabindex="-1">Tendências · São Paulo</h2><p>Esta seção permanece no ponto da RMSP (-23,5; -46,62), independentemente da cidade escolhida em Previsão e Histórico.</p><p id="atualizacao"></p></section>
+      <section id="aviso" class="aviso">
     <strong>Leia antes de usar:</strong> nenhum modelo no mundo prevê o tempo de forma determinística
     com meses de antecedência. O que este modelo (e os centros oficiais) fazem é estimar
     <em>probabilidades</em> de um trimestre ficar abaixo, dentro ou acima do normal.
@@ -33,21 +95,9 @@
     essencialmente climatologia + tendência de aquecimento. A seção
     <a href="#skill">Habilidade do modelo</a> mostra os números reais, sem maquiagem.
   </section>
-
-  <section>
-    <h2>🌤️ Próximos 16 dias (previsão do tempo)</h2>
-    <p>Para a janela curta, previsão meteorológica tem habilidade real — bem melhor que
-       qualquer modelo sazonal. Estes dados vêm <strong>ao vivo</strong> do Open-Meteo (modelo
-       numérico ECMWF/GFS) e são atualizados toda vez que você abre a página. A confiança é
-       alta nos primeiros ~7 dias e cai gradualmente até ~14; além disso, use o modelo
-       sazonal abaixo. É a forma honesta de "reduzir a incerteza" no curtíssimo prazo.</p>
-    <p id="curto-status" class="atualizacao-curto"></p>
-    <div class="grafico grafico-grande"><canvas id="grafico-curto"></canvas></div>
-  </section>
-
   <section>
     <h2>📈 Próximos 24 meses, mês a mês</h2>
-    <p><strong>Como ler:</strong> a linha azul cheia é o que foi <em>observado</em> nos últimos
+    <p><strong>Como ler:</strong> a linha azul cheia é o que foi <em>estimado pela reanálise</em> nos últimos
        24 meses; a linha tracejada é o valor <em>esperado</em> pelo modelo para os próximos 24;
        a faixa sombreada é a incerteza de ±1 desvio padrão (≈68% dos casos devem cair dentro dela);
        a linha cinza pontilhada é a normal climatológica 1991–2020 de cada mês.
@@ -82,40 +132,16 @@
     <div class="grafico grafico-grande"><canvas id="grafico-chuva"></canvas></div>
     <div class="grafico grafico-grande"><canvas id="grafico-temp"></canvas></div>
   </section>
-
-  <section>
-    <h2>⚖️ O que move a previsão</h2>
-    <p>Efeito de <strong>+1 desvio padrão</strong> de cada índice sobre a anomalia do trimestre
-       (média das 12 estações do ano), nas unidades da variável. Barras para cima = índice alto
-       aumenta chuva/temperatura; para baixo = reduz. Compare os horizontes: a influência dos
-       oceanos enfraquece com a distância, enquanto a <em>tendência de aquecimento</em>
-       segue firme — é por isso que ela domina as previsões longas de temperatura.</p>
-    <div class="grafico"><canvas id="grafico-infl-chuva"></canvas></div>
-    <div class="grafico"><canvas id="grafico-infl-temp"></canvas></div>
-  </section>
-
   <section>
     <h2>🔥 Aquecimento de longo prazo</h2>
     <p id="aquecimento-texto"></p>
     <div class="grafico grafico-grande"><canvas id="grafico-anual"></canvas></div>
   </section>
-
   <section>
     <h2>📅 Previsão por trimestre (probabilidades)</h2>
     <p id="previsao-intro"></p>
     <div id="cards-previsao" class="cards"></div>
   </section>
-
-  <section id="skill">
-    <h2>🎯 Habilidade do modelo (validação 1979–presente)</h2>
-    <p>RPSS (Ranked Probability Skill Score) comparado à climatologia: 0 = igual a chutar
-       as frequências históricas; 1 = previsão perfeita. Valores típicos de previsão sazonal
-       no Sudeste do Brasil ficam abaixo de 0,1 — e caem com o horizonte. Validação
-       leave-one-year-out, sem vazamento de dados.</p>
-    <div class="grafico"><canvas id="grafico-skill"></canvas></div>
-    <div id="tabela-skill"></div>
-  </section>
-
   <section>
     <h2>🌊 Índices climáticos agora</h2>
     <p>Estes quatro índices medem o estado dos oceanos e da circulação atmosférica —
@@ -125,7 +151,29 @@
     <p id="enso-estado"></p>
     <div id="cards-indices" class="cards-indices"></div>
   </section>
-
+  </div>
+  <div id="sobre" class="tab-panel" hidden aria-labelledby="about-title">
+    <h2 id="about-title" tabindex="-1">Sobre os dados</h2>
+    <p>Previsão mostra o futuro próximo. Histórico consulta a reanálise ERA5. Tendências reúne as projeções do modelo sazonal de São Paulo, com sua incerteza.</p>
+      <section>
+    <h2>⚖️ O que move a previsão</h2>
+    <p>Efeito de <strong>+1 desvio padrão</strong> de cada índice sobre a anomalia do trimestre
+       (média das 12 estações do ano), nas unidades da variável. Barras para cima = índice alto
+       aumenta chuva/temperatura; para baixo = reduz. Compare os horizontes: a influência dos
+       oceanos enfraquece com a distância, enquanto a <em>tendência de aquecimento</em>
+       segue firme — é por isso que ela domina as previsões longas de temperatura.</p>
+    <div class="grafico"><canvas id="grafico-infl-chuva"></canvas></div>
+    <div class="grafico"><canvas id="grafico-infl-temp"></canvas></div>
+  </section>
+  <section id="skill">
+    <h2>🎯 Habilidade do modelo (validação 1979–presente)</h2>
+    <p>RPSS (Ranked Probability Skill Score) comparado à climatologia: 0 = igual a chutar
+       as frequências históricas; 1 = previsão perfeita. Valores típicos de previsão sazonal
+       no Sudeste do Brasil ficam abaixo de 0,1 — e caem com o horizonte. Validação
+       leave-one-year-out, sem vazamento de dados.</p>
+    <div class="grafico"><canvas id="grafico-skill"></canvas></div>
+    <div id="tabela-skill" class="table-scroll" tabindex="0" role="region" aria-label="Tabela de validação"></div>
+  </section>
   <section>
     <h2>🏛️ Previsões oficiais</h2>
     <ul class="oficiais">
@@ -137,24 +185,23 @@
           — previsões sazonais multi-modelo europeias (ECMWF, Météo-France, UKMO etc.), mapas globais (em inglês).</li>
     </ul>
   </section>
-
   <section>
     <h2>📜 Registro de atualizações</h2>
     <p>O robô do projeto roda automaticamente <strong>todo dia 5 de cada mês</strong> (GitHub
        Actions): baixa os índices mais recentes, refaz a previsão e registra aqui o que capturou.
-       Os valores são as médias de 3 meses usadas pelo modelo. A próxima execução automática
-       é <strong>5 de julho de 2026</strong>.</p>
-    <div id="tabela-log"></div>
+       Os valores são as médias de 3 meses usadas pelo modelo. A próxima execução está prevista
+       para <strong id="proxima-atualizacao">o próximo dia 5, às 09:00 UTC</strong>.</p>
+    <div id="tabela-log" class="table-scroll" tabindex="0" role="region" aria-label="Registro de atualizações"></div>
   </section>
-
   <section>
     <h2>🔬 Metodologia e limitações</h2>
     <details>
       <summary>Como o modelo funciona</summary>
       <ul>
         <li><strong>Alvo:</strong> anomalias de precipitação acumulada e temperatura média em trimestres
-            móveis (JFM, FMA, …, DJF) para o ponto -23,5°S -46,6°O (RMSP), série ERA5 desde 1940
-            via Open-Meteo. Climatologia de referência: 1991–2020.</li>
+            móveis (JFM, FMA, …, DJF) para o ponto -23,5°S -46,6°O (RMSP), série desde 1940
+            via Open-Meteo, com seleção automática de modelos. Climatologia de referência: 1991–2020.
+            O Histórico usa ERA5 explícito; pode haver diferenças em relação à série sazonal legada.</li>
         <li><strong>Preditores:</strong> ONI (ENSO), TSA (Atlântico Sul tropical), DMI (Dipolo do Índico),
             AAO (Oscilação Antártica) — médias dos 3 meses anteriores à inicialização — um termo de
             tendência linear que captura o aquecimento de longo prazo, e a persistência (anomalia
@@ -182,21 +229,13 @@
             "acima do normal" na temperatura vem majoritariamente dessa tendência.</li>
         <li>O estado do ENSO com 12–24 meses de antecedência é imprevisível
             (barreira de previsibilidade do outono austral).</li>
-        <li>Ponto único de grade ERA5 ≠ rede de estações; eventos extremos locais não são representados.</li>
+        <li>Um ponto de reanálise em grade não equivale a uma rede de estações; extremos locais podem ser suavizados.</li>
         <li>Alguns índices chegam com defasagem de meses (ver rodapé); usa-se persistência do último valor.</li>
       </ul>
     </details>
   </section>
+  </div>
 </main>
-
-<footer>
-  <p id="meta-rodape"></p>
-  <p>Código aberto: <a href="https://github.com/agamemnon140/clima-sp">github.com/agamemnon140/clima-sp</a> —
-     atualização automática mensal via GitHub Actions.</p>
-  <p>Fontes: NOAA PSL/CPC (índices), ERA5/Open-Meteo (observações). Este site não substitui
-     as previsões oficiais do INMET e do CPTEC/INPE.</p>
-</footer>
-
-<script src="js/app.js?v=6"></script>
+<footer><p id="meta-rodape"></p><p><a href="https://github.com/agamemnon140/clima-sp">Código no GitHub</a> · Dados meteorológicos: <a href="https://open-meteo.com/">Open-Meteo</a> / Copernicus · Índices: NOAA.</p><p>Este site não substitui as previsões oficiais do INMET e do CPTEC/INPE.</p></footer>
 </body>
 </html>

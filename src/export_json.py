@@ -49,7 +49,7 @@ def export_meta(forecast_result: dict) -> None:
         "gerado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "periodo_treino": f"{config.TRAIN_START_YEAR}-presente",
         "climatologia": f"{config.CLIMATOLOGY_START}-{config.CLIMATOLOGY_END}",
-        "fonte_alvo": "ERA5 via Open-Meteo Archive API",
+        "fonte_alvo": "Open-Meteo Archive API (selecao automatica de modelos)",
         "coordenadas": {"lat": config.LATITUDE, "lon": config.LONGITUDE},
         "defasagens_indices_meses": forecast_result["defasagens_meses"],
         "n_hindcast": int(skill["n"].sum()),

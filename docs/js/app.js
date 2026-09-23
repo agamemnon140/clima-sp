@@ -1,5 +1,12 @@
 /* Dashboard clima-sp: lê os JSONs gerados pelo pipeline e renderiza os blocos. */
 
+if (globalThis.Chart) {
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.font.size = 14;
+  Chart.defaults.color = '#405568';
+}
+
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun",
                "jul", "ago", "set", "out", "nov", "dez"];
 
@@ -98,7 +105,7 @@ function renderMensal(mensal, { anos = 2, mes = null } = {}) {
       data: {
         labels,
         datasets: [
-          { label: "Observado", data: observado, borderColor: cfg.cor,
+          { label: "Reanálise", data: observado, borderColor: cfg.cor,
             borderWidth: 2, pointRadius: ptRaio, fill: false },
           { label: "Esperado (modelo)", data: esperado, borderColor: cfg.cor,
             borderDash: [6, 4], borderWidth: 2, pointRadius: ptRaio, fill: false },
@@ -117,7 +124,7 @@ function renderMensal(mensal, { anos = 2, mes = null } = {}) {
         },
         scales: {
           y: cfg.minY === null ? {} : { min: cfg.minY },
-          x: { ticks: { maxTicksLimit: 16 } },
+          x: { ticks: { maxTicksLimit: 5, maxRotation: 0 } },
         },
         interaction: { mode: "index", intersect: false },
       },
@@ -155,52 +162,6 @@ const NOMES_PREDITORES = {
   trend: "Tendência (aquecimento)",
   persist: "Persistência (mês recente)",
 };
-
-const URL_CURTO_PRAZO =
-  "https://api.open-meteo.com/v1/forecast?latitude=-23.5&longitude=-46.62" +
-  "&daily=temperature_2m_mean,precipitation_sum&forecast_days=16&timezone=America%2FSao_Paulo";
-
-async function renderCurtoPrazo() {
-  const el = document.getElementById("grafico-curto");
-  if (!el) return;
-  const status = document.getElementById("curto-status");
-  let dados;
-  try {
-    const resp = await fetch(URL_CURTO_PRAZO, { cache: "no-store" });
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    dados = (await resp.json()).daily;
-  } catch (err) {
-    if (status) status.textContent =
-      "Não foi possível carregar a previsão de 16 dias agora (sem rede?). " + err.message;
-    return;
-  }
-  const labels = dados.time.map(d => {
-    const [, m, dia] = d.split("-");
-    return `${dia}/${m}`;
-  });
-  if (status) status.textContent = "Atualizado agora, ao abrir a página · fonte: Open-Meteo";
-
-  new Chart(el, {
-    data: {
-      labels,
-      datasets: [
-        { type: "bar", label: "Chuva (mm/dia)", data: dados.precipitation_sum,
-          backgroundColor: "#1c5d99", yAxisID: "y", order: 2 },
-        { type: "line", label: "Temperatura média (°C)", data: dados.temperature_2m_mean,
-          borderColor: "#e07b39", borderWidth: 2, pointRadius: 2, yAxisID: "y1", order: 1 },
-      ],
-    },
-    options: {
-      plugins: { title: { display: true, text: "Previsão diária — próximos 16 dias (RMSP)" } },
-      scales: {
-        y: { position: "left", title: { display: true, text: "mm" }, beginAtZero: true },
-        y1: { position: "right", title: { display: true, text: "°C" },
-              grid: { drawOnChartArea: false } },
-      },
-      interaction: { mode: "index", intersect: false },
-    },
-  });
-}
 
 function renderLog(log) {
   const el = document.getElementById("tabela-log");
@@ -248,7 +209,7 @@ function renderInfluencias(infl) {
       },
       options: {
         plugins: { title: { display: true, text: cfg.titulo } },
-        scales: { x: { ticks: { font: { size: 10 } } } },
+        scales: { x: { ticks: { font: { size: 13 } } } },
       },
     });
   }
@@ -285,8 +246,8 @@ function renderAnual(anual) {
       ],
     },
     options: {
-      plugins: { title: { display: true, text: "Temperatura média anual — RMSP (ERA5, 1940–presente)" } },
-      scales: { x: { ticks: { maxTicksLimit: 12 } }, y: { title: { display: true, text: "°C" } } },
+      plugins: { title: { display: true, text: "Temperatura média anual — RMSP (Open-Meteo, 1940–presente)" } },
+      scales: { x: { ticks: { maxTicksLimit: 5, maxRotation: 0 } }, y: { title: { display: true, text: "°C" } } },
       interaction: { mode: "index", intersect: false },
     },
   });
@@ -398,7 +359,7 @@ function renderIndices(indices) {
 
 function renderMeta(meta) {
   const quando = new Date(meta.gerado_em).toLocaleString("pt-BR");
-  document.getElementById("atualizacao").textContent = `Última atualização: ${quando} (UTC)`;
+  document.getElementById("atualizacao").textContent = `Última atualização sazonal: ${quando} (seu horário local)`;
   const defas = Object.entries(meta.defasagens_indices_meses)
     .map(([k, v]) => `${k.toUpperCase()}: ${v}m`).join(" · ");
   document.getElementById("meta-rodape").textContent =
@@ -406,23 +367,32 @@ function renderMeta(meta) {
     `(${meta.coordenadas.lat}, ${meta.coordenadas.lon}) · defasagem dos índices — ${defas}`;
 }
 
+// Cada arquivo e painel é independente, inclusive a previsão ao vivo em explorer.mjs.
 (async () => {
-  try {
-    const [prev, mensal, infl, anual, skill, indices, meta, log] = await Promise.all(
-      ["previsao", "mensal", "influencias", "anual", "skill", "indices", "meta", "log"].map(carregar));
-    // cada bloco isolado: a falha de um não derruba os demais
-    const blocos = [
-      [renderMensal, mensal], [ligarSeletores, mensal], [renderInfluencias, infl],
-      [renderAnual, anual], [renderPrevisao, prev], [renderSkill, skill],
-      [renderIndices, indices], [renderMeta, meta], [renderLog, log],
-    ];
-    for (const [fn, dados] of blocos) {
-      try { fn(dados); } catch (err) { console.error(fn.name, err); }
+  const tasks = [
+    ['mensal', data => { renderMensal(data, {}); ligarSeletores(data); }, 'seletor-anos'],
+    ['influencias', renderInfluencias, 'grafico-infl-chuva'],
+    ['anual', renderAnual, 'aquecimento-texto'],
+    ['previsao', renderPrevisao, 'previsao-intro'],
+    ['skill', renderSkill, 'tabela-skill'],
+    ['indices', renderIndices, 'enso-estado'],
+    ['meta', renderMeta, 'atualizacao'],
+    ['log', renderLog, 'tabela-log'],
+  ];
+  await Promise.allSettled(tasks.map(async ([name, render, target]) => {
+    try { render(await carregar(name)); }
+    catch (error) {
+      const message = document.createElement('p');
+      message.className = 'panel-error';
+      message.textContent = `Não foi possível carregar este painel. Recarregue a página para tentar novamente. (${name})`;
+      document.getElementById(target)?.before(message);
+      console.error(name, error);
     }
-    // painel ao vivo, independente dos JSONs publicados
-    renderCurtoPrazo();
-  } catch (err) {
-    document.getElementById("previsao-intro").textContent =
-      "Erro ao carregar os dados do dashboard: " + err.message;
-  }
+  }));
 })();
+
+const now = new Date();
+let nextUpdate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 5, 9));
+if (nextUpdate <= now) nextUpdate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 5, 9));
+const nextLabel = document.getElementById('proxima-atualizacao');
+if (nextLabel) nextLabel.textContent = nextUpdate.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) + ', às 09:00 UTC';

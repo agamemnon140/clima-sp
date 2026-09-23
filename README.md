@@ -5,6 +5,51 @@ com modelo estatístico próprio, validação honesta e dashboard público.
 
 🌐 **Dashboard**: https://agamemnon140.github.io/clima-sp/
 
+## Consulta no celular
+
+O dashboard tem quatro abas: **Previsão**, **Histórico**, **Tendências** e **Sobre**.
+Previsão e Histórico usam a cidade escolhida; Tendências mantém o modelo da RMSP.
+No celular, a navegação fica na parte inferior, com áreas de toque de pelo menos 44 px,
+gráficos separados de temperatura e chuva e listas de valores que dispensam ampliar a tela.
+
+O Histórico consulta os dados diários ERA5 do Open-Meteo sob demanda, agrupados em
+dia, semana (segunda a domingo), mês ou ano. Chuva é somada; temperatura média usa
+as médias diárias disponíveis; máxima e mínima são extremos absolutos. Dados ausentes
+não viram zero. A cobertura aparece por variável e os períodos incompletos são sinalizados.
+O CSV inclui todo o intervalo, mesmo quando a lista e os gráficos estão paginados.
+
+A comparação opcional usa as normais diárias de 1991–2020 nos mesmos dias com dados
+da consulta. A referência exige os 30 anos, ou os oito anos bissextos para 29/fev.
+Os dados ficam em cache por localização, fuso e ano no IndexedDB (seis horas para
+os dois anos mais recentes, 30 dias para os anteriores); sem armazenamento disponível,
+o app usa cache em memória. A referência histórica é baixada apenas quando solicitada.
+ERA5 é reanálise em grade, não medição de estação, e tem cerca de cinco dias de defasagem.
+
+**Fonte legada:** o pipeline sazonal existente usa a seleção automática da Archive API,
+embora versões anteriores o identificassem como ERA5. O Histórico novo fixa `models=era5`.
+Os metadados foram corrigidos; a série e o modelo sazonais não foram recalculados nesta mudança.
+Pode haver diferenças entre as duas fontes. Migrar o modelo sazonal para ERA5 explícito
+exige reconstrução completa da série e nova validação, evitando misturar fontes no incremental.
+
+Plano da implementação: [PLANO-MELHORIAS-CLIMA.md](PLANO-MELHORIAS-CLIMA.md).
+
+### Verificação do dashboard
+
+Não há etapa de build: sirva a pasta `docs` com um servidor HTTP, inclusive para testar módulos JS.
+Node.js 20+ é usado apenas para testes:
+
+```bash
+npm ci
+npm run check
+npm test
+npx playwright install chromium webkit
+npm run test:ui
+```
+
+Os testes de interface executam os fluxos em Chromium e WebKit com emulação de iPhone,
+incluindo largura de 320 px e texto a 200%. Respostas meteorológicas são controladas nos
+testes para permitir resultados reproduzíveis; isso não substitui a conferência em um iPhone físico.
+
 ## O que dá (e o que não dá) para prever
 
 Nenhum modelo no mundo — nem os do ECMWF, NOAA ou INPE — prevê o tempo de forma
