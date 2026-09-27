@@ -107,10 +107,6 @@
     "descricao": "Anomalia de temperatura do Atlântico tropical sul (equador a ~20°S), em °C. Atlântico mais quente (positivo) fornece mais umidade para a ZCAS — o corredor de chuva que atravessa o Sudeste no verão.",
     "serie": [
       {
-        "mes": "2024-07",
-        "valor": 0.33
-      },
-      {
         "mes": "2024-08",
         "valor": 0.19
       },
@@ -201,9 +197,13 @@
       {
         "mes": "2026-06",
         "valor": 0.2
+      },
+      {
+        "mes": "2026-07",
+        "valor": 0.12
       }
     ],
-    "ultimo": 0.2
+    "ultimo": 0.12
   },
   "dmi": {
     "nome": "DMI (Dipolo do Oceano Índico)",
