@@ -2,8 +2,10 @@ name: Atualização mensal
 
 on:
   schedule:
-    # dia 5 de cada mês, 09:00 UTC — índices do mês anterior já publicados
-    - cron: "0 9 5 * *"
+    # dias 5, 12, 19 e 26, 09:00 UTC. O dia 5 pega os índices do mês anterior já publicados;
+    # as demais pegam índices que saem com atraso (DMI, TSA) e trocam o ERA5T preliminar.
+    # Não roda nos dias 1-4: o ERA5 tem ~5 dias de defasagem e o mês anterior sairia incompleto.
+    - cron: "0 9 5,12,19,26 * *"
   workflow_dispatch:
 
 permissions:
@@ -31,10 +33,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data docs/data
-          if git diff --cached --quiet; then
-            echo "sem mudanças neste mês"
+          # "gerado_em" muda em toda execução; sem dado novo, não vale um commit
+          if git diff --cached --quiet -I'"gerado_em"'; then
+            echo "sem dados novos"
           else
-            git commit -m "Atualização automática mensal ($(date -u +%Y-%m-%d))"
+            git commit -m "Atualização automática ($(date -u +%Y-%m-%d))"
             git pull --rebase origin main
             git push
           fi
