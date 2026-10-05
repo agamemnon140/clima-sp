@@ -1,120 +1,120 @@
 {
-  "inicializacao": "2026-09",
+  "inicializacao": "2026-10",
   "indices_usados": {
-    "oni": 1.38,
+    "oni": 1.78,
     "tsa": 0.16,
     "dmi": 0.24,
-    "aao": 0.76,
-    "trend": 2026.71
+    "aao": 0.01,
+    "trend": 2026.79
   },
   "defasagens_meses": {
     "oni": 2,
-    "tsa": 2,
-    "dmi": 4,
+    "tsa": 3,
+    "dmi": 5,
     "aao": 1
   },
   "previsoes": [
     {
       "lead": 3,
-      "estacao": "DJF",
-      "ano": 2026,
-      "inicio": "2026-12",
+      "estacao": "JFM",
+      "ano": 2027,
+      "inicio": "2027-01",
       "variaveis": {
         "precipitacao": {
-          "p_abaixo": 0.342,
-          "p_normal": 0.298,
-          "p_acima": 0.36,
-          "anomalia": 24.97,
-          "climatologia": 585.7,
-          "limiar_abaixo": -32.71,
-          "limiar_acima": 47.39
+          "p_abaixo": 0.341,
+          "p_normal": 0.452,
+          "p_acima": 0.207,
+          "anomalia": -71.36,
+          "climatologia": 566.8,
+          "limiar_abaixo": -46.2,
+          "limiar_acima": 19.93
         },
         "temperatura": {
-          "p_abaixo": 0.221,
-          "p_normal": 0.187,
-          "p_acima": 0.592,
-          "anomalia": 0.46,
-          "climatologia": 22.1,
-          "limiar_abaixo": -0.49,
-          "limiar_acima": 0.26
+          "p_abaixo": 0.235,
+          "p_normal": 0.29,
+          "p_acima": 0.475,
+          "anomalia": 0.48,
+          "climatologia": 22.0,
+          "limiar_abaixo": -0.19,
+          "limiar_acima": 0.23
         }
       }
     },
     {
       "lead": 6,
-      "estacao": "MAM",
+      "estacao": "AMJ",
       "ano": 2027,
-      "inicio": "2027-03",
+      "inicio": "2027-04",
       "variaveis": {
         "precipitacao": {
-          "p_abaixo": 0.341,
-          "p_normal": 0.346,
-          "p_acima": 0.313,
-          "anomalia": 6.49,
-          "climatologia": 279.7,
-          "limiar_abaixo": -24.0,
-          "limiar_acima": 46.67
+          "p_abaixo": 0.358,
+          "p_normal": 0.218,
+          "p_acima": 0.424,
+          "anomalia": -3.91,
+          "climatologia": 174.8,
+          "limiar_abaixo": -20.01,
+          "limiar_acima": 33.89
         },
         "temperatura": {
-          "p_abaixo": 0.233,
-          "p_normal": 0.347,
-          "p_acima": 0.421,
-          "anomalia": 0.65,
-          "climatologia": 19.7,
-          "limiar_abaixo": -0.22,
-          "limiar_acima": 0.32
+          "p_abaixo": 0.258,
+          "p_normal": 0.352,
+          "p_acima": 0.39,
+          "anomalia": 0.33,
+          "climatologia": 18.1,
+          "limiar_abaixo": -0.5,
+          "limiar_acima": 0.18
         }
       }
     },
     {
       "lead": 12,
-      "estacao": "SON",
+      "estacao": "OND",
       "ano": 2027,
-      "inicio": "2027-09",
+      "inicio": "2027-10",
       "variaveis": {
         "precipitacao": {
           "p_abaixo": 0.364,
-          "p_normal": 0.304,
-          "p_acima": 0.332,
-          "anomalia": -47.96,
-          "climatologia": 354.1,
-          "limiar_abaixo": -45.85,
-          "limiar_acima": 22.75
+          "p_normal": 0.334,
+          "p_acima": 0.303,
+          "anomalia": -5.59,
+          "climatologia": 443.3,
+          "limiar_abaixo": -34.32,
+          "limiar_acima": 43.48
         },
         "temperatura": {
-          "p_abaixo": 0.237,
-          "p_normal": 0.326,
-          "p_acima": 0.437,
-          "anomalia": 0.54,
-          "climatologia": 19.7,
-          "limiar_abaixo": -0.56,
-          "limiar_acima": 0.27
+          "p_abaixo": 0.285,
+          "p_normal": 0.366,
+          "p_acima": 0.35,
+          "anomalia": 0.28,
+          "climatologia": 20.6,
+          "limiar_abaixo": -0.4,
+          "limiar_acima": 0.05
         }
       }
     },
     {
       "lead": 24,
-      "estacao": "SON",
+      "estacao": "OND",
       "ano": 2028,
-      "inicio": "2028-09",
+      "inicio": "2028-10",
       "variaveis": {
         "precipitacao": {
-          "p_abaixo": 0.417,
-          "p_normal": 0.371,
-          "p_acima": 0.211,
-          "anomalia": -105.41,
-          "climatologia": 354.1,
-          "limiar_abaixo": -45.88,
-          "limiar_acima": 24.12
+          "p_abaixo": 0.365,
+          "p_normal": 0.432,
+          "p_acima": 0.202,
+          "anomalia": -43.62,
+          "climatologia": 443.3,
+          "limiar_abaixo": -34.79,
+          "limiar_acima": 39.61
         },
         "temperatura": {
-          "p_abaixo": 0.271,
-          "p_normal": 0.353,
-          "p_acima": 0.377,
-          "anomalia": -0.04,
-          "climatologia": 19.7,
-          "limiar_abaixo": -0.56,
-          "limiar_acima": 0.28
+          "p_abaixo": 0.383,
+          "p_normal": 0.327,
+          "p_acima": 0.29,
+          "anomalia": -0.57,
+          "climatologia": 20.6,
+          "limiar_abaixo": -0.41,
+          "limiar_acima": 0.08
         }
       }
     }
