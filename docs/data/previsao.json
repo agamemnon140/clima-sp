@@ -24,7 +24,7 @@
           "p_abaixo": 0.341,
           "p_normal": 0.452,
           "p_acima": 0.207,
-          "anomalia": -71.36,
+          "anomalia": -71.34,
           "climatologia": 566.8,
           "limiar_abaixo": -46.2,
           "limiar_acima": 19.93
@@ -50,7 +50,7 @@
           "p_abaixo": 0.358,
           "p_normal": 0.218,
           "p_acima": 0.424,
-          "anomalia": -3.91,
+          "anomalia": -3.92,
           "climatologia": 174.8,
           "limiar_abaixo": -20.01,
           "limiar_acima": 33.89
