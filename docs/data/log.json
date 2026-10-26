@@ -1,7 +1,7 @@
 [
   {
     "mes": "2026-10",
-    "gerado_em": "2026-10-19T15:58:36+00:00",
+    "gerado_em": "2026-10-26T15:34:58+00:00",
     "indices": {
       "oni": 1.78,
       "tsa": 0.16,
@@ -21,7 +21,7 @@
         "p_abaixo": 0.341,
         "p_normal": 0.452,
         "p_acima": 0.207,
-        "anomalia": -71.34,
+        "anomalia": -71.36,
         "climatologia": 566.8,
         "limiar_abaixo": -46.2,
         "limiar_acima": 19.93
