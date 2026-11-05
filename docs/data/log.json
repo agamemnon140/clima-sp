@@ -1,5 +1,43 @@
 [
   {
+    "mes": "2026-11",
+    "gerado_em": "2026-11-05T16:57:02+00:00",
+    "indices": {
+      "oni": 2.14,
+      "tsa": 0.37,
+      "dmi": 0.24,
+      "aao": 0.0
+    },
+    "defasagens_meses": {
+      "oni": 2,
+      "tsa": 2,
+      "dmi": 6,
+      "aao": 1
+    },
+    "enso": "El Niño",
+    "resumo": {
+      "estacao": "FMA 2027",
+      "chuva": {
+        "p_abaixo": 0.333,
+        "p_normal": 0.342,
+        "p_acima": 0.326,
+        "anomalia": -36.14,
+        "climatologia": 396.5,
+        "limiar_abaixo": -49.17,
+        "limiar_acima": 49.83
+      },
+      "temperatura": {
+        "p_abaixo": 0.306,
+        "p_normal": 0.209,
+        "p_acima": 0.485,
+        "anomalia": 0.36,
+        "climatologia": 21.3,
+        "limiar_abaixo": -0.25,
+        "limiar_acima": 0.22
+      }
+    }
+  },
+  {
     "mes": "2026-10",
     "gerado_em": "2026-10-26T15:34:58+00:00",
     "indices": {
