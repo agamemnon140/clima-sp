@@ -1,15 +1,18 @@
 # clima-sp 🌦️
 
-Previsão climática sazonal **probabilística** para a Região Metropolitana de São Paulo (RMSP),
-com modelo estatístico próprio, validação honesta e dashboard público.
+Previsão climática sazonal **probabilística** para a Região Metropolitana de São Paulo (RMSP)
+e para Valinhos, com modelo estatístico próprio, validação honesta e dashboard público.
 
 🌐 **Dashboard**: https://agamemnon140.github.io/clima-sp/
 
 ## Consulta no celular
 
 O dashboard tem quatro abas: **Previsão**, **Histórico**, **Tendências** e **Sobre**.
-Previsão e Histórico usam a cidade escolhida; Tendências mantém o modelo da RMSP.
-No celular, a navegação fica na parte inferior, com áreas de toque de pelo menos 44 px,
+A barra de local traz atalhos para **São Paulo** e **Valinhos**, os dois pontos com modelo
+sazonal próprio, e a busca de qualquer outra cidade. A escolha vale para todas as abas:
+Previsão e Histórico consultam a cidade escolhida; Tendências e os painéis do modelo em Sobre
+mostram o ponto modelado dela ou, para as demais cidades, o mais próximo, com o aviso e a
+distância. No celular, a navegação fica na parte inferior, com áreas de toque de pelo menos 44 px,
 gráficos separados de temperatura e chuva e listas de valores que dispensam ampliar a tela.
 
 O Histórico consulta os dados diários ERA5 do Open-Meteo sob demanda e os mostra em
@@ -25,6 +28,15 @@ de período oferece 1, 5, 10 e 20 anos (anos civis até hoje), Todos (desde 1940
 Personalizado, que revela as datas livres com navegação para o intervalo anterior e o
 próximo. Abrir um mês, semana ou ano pela matriz passa o período para Personalizado.
 
+**Contar dias.** Em "Mostrar", a matriz troca o valor do período pela contagem de dias em que
+o valor diário da variável ficou igual ou acima (≥) ou igual ou abaixo (≤) de um limite que
+você escolhe: dias com máxima ≥ 30 °C, com mínima ≤ 10 °C, com chuva ≥ 1 mm, dias secos
+(chuva ≤ 0 mm), com sol ≥ 8 h. O limite entra no próprio campo ou pelos botões − e +, e cada
+variável guarda o seu. A comparação inclui o limite. Acima da matriz aparece o total do
+período, com a parcela dos dias com dados; a coluna Total soma cada linha (o ano, em
+Ano × Mês). Nas leituras por dia a célula mantém o valor do dia e ganha cor quando atende ao
+critério. Dias sem dados não entram na conta, e mudar o limite não refaz a consulta.
+
 As cores usam um gradiente contínuo escalado sobre os valores visíveis na matriz; o máximo
 e o mínimo do que está na tela recebem contorno (sólido e tracejado). Dias sem dados aparecem
 hachurados com “–”, nunca como zero; dias inexistentes ficam em branco. Cada célula informa,
@@ -39,7 +51,8 @@ derivada da radiação (limiar de 120 W/m²), não de heliógrafo. ERA5 é rean�
 não medição de estação, e tem cerca de cinco dias de defasagem.
 
 **Fonte legada:** o pipeline sazonal existente usa a seleção automática da Archive API,
-embora versões anteriores o identificassem como ERA5. O Histórico novo fixa `models=era5`.
+embora versões anteriores o identificassem como ERA5. A série de Valinhos usa a mesma seleção,
+para os dois pontos serem comparáveis. O Histórico novo fixa `models=era5`.
 Os metadados foram corrigidos; a série e o modelo sazonais não foram recalculados nesta mudança.
 Pode haver diferenças entre as duas fontes. Migrar o modelo sazonal para ERA5 explícito
 exige reconstrução completa da série e nova validação, evitando misturar fontes no incremental.
@@ -57,6 +70,7 @@ npm run check
 npm test
 npx playwright install chromium webkit
 npm run test:ui
+python -m unittest tests.test_fetch_target   # download retomável do pipeline, sem rede
 ```
 
 Os testes de interface executam os fluxos em Chromium e WebKit com emulação de iPhone,
@@ -97,7 +111,9 @@ temperatura da superfície dos oceanos:
   na "previsibilidade" de temperatura em horizontes longos.
 
 **Alvos**: anomalias de precipitação acumulada e temperatura média em trimestres móveis
-(JFM, FMA, …, DJF), no ponto -23,5°S -46,6°O, vs. climatologia 1991–2020.
+(JFM, FMA, …, DJF), em cada ponto modelado — São Paulo (-23,50; -46,62) e Valinhos
+(-22,97; -47,00) —, vs. climatologia 1991–2020. Cada ponto tem série, modelo e validação
+próprios; os índices climáticos são os mesmos.
 
 ## Como funciona
 
@@ -118,24 +134,37 @@ temperatura da superfície dos oceanos:
    treina com todo o histórico, prevê com os índices mais recentes e grava os JSONs
    lidos pelo dashboard estático em [docs/](docs/).
 
+Os pontos modelados estão em `LOCAIS`, em [src/config.py](src/config.py), e espelhados em
+[docs/js/locais.mjs](docs/js/locais.mjs) (um teste confere que as duas listas batem). São Paulo
+mantém os arquivos na raiz de `data/raw`, `data/processed` e `docs/data`; cada outro local usa
+uma subpasta com o próprio nome (`valinhos/`). Para incluir um ponto, acrescente-o às duas
+listas: a execução seguinte baixa a série desde 1940 e publica os JSONs.
+
 ## Atualização automática
 
 O workflow [.github/workflows/atualiza-mensal.yml](.github/workflows/atualiza-mensal.yml)
-roda todo dia 5 (09:00 UTC): baixa os dados mais novos, refaz hindcast e previsão e
-commita os JSONs atualizados — o dashboard se atualiza sozinho. Também pode ser disparado
-manualmente na aba Actions.
+roda nos dias 5, 12, 19 e 26 (09:00 UTC): baixa os dados mais novos, refaz hindcast e previsão
+de cada local e commita os JSONs atualizados — o dashboard se atualiza sozinho. Também pode
+ser disparado manualmente na aba Actions, em qualquer ramo.
+
+A falha de um local não impede os outros: a execução termina marcada como falha, mas o que foi
+gerado é commitado. O primeiro download de um local novo (a série inteira desde 1940) vai em
+blocos de dez anos espaçados de um minuto, por causa do teto por minuto do Open-Meteo, e é
+retomável: se cortar no meio, a execução seguinte continua do último mês gravado, e o local
+só entra no modelo com a série completa.
 
 ## Rodando localmente
 
 ```bash
 pip install -r requirements.txt
-python -m src.run_all          # pipeline completo (~2 min)
+python -m src.run_all          # pipeline completo, todos os locais (~1 min por local)
+python -m src.fetch_target valinhos --full  # refaz a série inteira de um local
 python -m http.server -d docs  # dashboard em http://localhost:8000
 ```
 
 ## Limitações
 
-- Ponto único de grade ERA5 ≠ rede de estações; extremos locais não são representados.
+- Um ponto de grade por local ≠ rede de estações; extremos locais não são representados.
 - Alguns índices chegam com meses de defasagem (o DMI/HadISST em especial); usa-se
   persistência do último valor e a defasagem fica registrada em `docs/data/meta.json`.
 - ~46 anos de treino é pouco; os intervalos das probabilidades são largos.

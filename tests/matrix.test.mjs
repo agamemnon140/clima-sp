@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMatrix, cellStyle, columnsFor, gradientCSS, luminance, LAYOUT_FROM_GROUP, periodRange } from '../docs/js/matrix.mjs';
+import { buildMatrix, cellStyle, columnsFor, countScale, COUNT_DEFAULTS, gradientCSS, luminance, LAYOUT_FROM_GROUP, METRICS, periodRange, validCount } from '../docs/js/matrix.mjs';
 import { datesBetween } from '../docs/js/weather-data.mjs';
 
 const daily = (start, end, extra = {}) => datesBetween(start, end).map(date => ({ date, precip: 1, mean: 20, max: 30, min: 5, sun: 8, ...extra }));
@@ -112,4 +112,83 @@ test('filtro antigo por agrupamento migra para uma leitura', () => {
   assert.equal(LAYOUT_FROM_GROUP.year, 'year-month');
   assert.equal(LAYOUT_FROM_GROUP.week, 'week-weekday');
   assert.equal(LAYOUT_FROM_GROUP.outro, undefined);
+});
+
+test('contagem de dias por mês inclui o próprio limite, soma por linha e não conta dia sem dado', () => {
+  // jan/2025: máximas 28, 29, 30, 31, 32 repetidas; fev/2025 só tem dados em parte dos dias.
+  const rows = daily('2025-01-01', '2025-02-10').map((row, i) => ({ ...row, max: 28 + (i % 5) }));
+  const matrix = buildMatrix(rows, '2025-01-01', '2025-02-28', 'year-month', 'max', { op: 'gte', threshold: 30 });
+  assert.equal(matrix.mode, 'count');
+  assert.equal(matrix.unit, 'dias');
+  assert.equal(matrix.scale, 'hot');
+  const [jan, feb] = matrix.rows[0].cells;
+  assert.equal(jan.value, 18); // 31 dias: 6 ciclos completos (3 de cada 5) + o dia 31, que vale 28
+  assert.equal(jan.matches, 18);
+  assert.equal(jan.count, 31);
+  assert.equal(jan.partial, false);
+  assert.equal(feb.value, 6); // 10 dias com dados: 29, 30, 31, 32, 28, 29, 30, 31, 32, 28
+  assert.equal(feb.count, 10);
+  assert.equal(feb.days, 28);
+  assert.equal(feb.partial, true);
+  assert.deepEqual(feb.drill, { layout: 'month-day', start: '2025-02-01', end: '2025-02-28' });
+  assert.deepEqual(matrix.rows[0].total, { matches: 24, count: 41, days: 59 });
+  assert.deepEqual(matrix.total, { matches: 24, count: 41, days: 59 });
+  assert.equal(matrix.maxTotal, 24);
+  assert.equal(matrix.min, 0);
+  assert.equal(matrix.max, 18);
+  assert.deepEqual(matrix.maxCell, { row: 0, col: 0 });
+  assert.equal(matrix.minCell, null);
+  assert.deepEqual(matrix.criterion, { metric: 'max', op: 'gte', threshold: 30, symbol: '≥', noun: 'máxima', unit: '°C' });
+  const below = buildMatrix(rows, '2025-01-01', '2025-01-31', 'year-month', 'max', { op: 'lte', threshold: 30 });
+  assert.equal(below.rows[0].cells[0].value, 19); // 28, 29 e o próprio 30
+  assert.equal(below.scale, 'cold');
+});
+
+test('contagem em período sem nenhum dado fica sem valor, não zero', () => {
+  const matrix = buildMatrix([], '2025-01-01', '2025-01-31', 'year-month', 'precip', { op: 'gte', threshold: 1 });
+  assert.equal(matrix.rows[0].cells[0].value, null);
+  assert.equal(matrix.rows[0].cells[0].count, 0);
+  assert.deepEqual(matrix.total, { matches: 0, count: 0, days: 31 });
+  assert.equal(matrix.max, null);
+  assert.equal(matrix.maxCell, null);
+  assert.equal(matrix.count, 0);
+});
+
+test('contagem nas leituras por dia mantém o valor do dia e marca quem atende ao critério', () => {
+  const rows = daily('2025-03-03', '2025-03-08').map((row, i) => ({ ...row, precip: [0, 0.9, 1, 12, null, 0][i] }));
+  const matrix = buildMatrix(rows, '2025-03-03', '2025-03-09', 'week-weekday', 'precip', { op: 'gte', threshold: 1 });
+  const cells = matrix.rows[0].cells;
+  assert.deepEqual(cells.map(cell => cell.value), [0, 0.9, 1, 12, null, 0, null]);
+  assert.deepEqual(cells.map(cell => cell.match), [false, false, true, true, null, false, null]);
+  assert.deepEqual(matrix.rows[0].total, { matches: 2, count: 5, days: 7 });
+  assert.equal(matrix.unit, 'mm');
+  assert.equal(matrix.daily, true);
+  assert.equal(matrix.max, null);
+  assert.equal(matrix.maxCell, null);
+  const dry = buildMatrix(rows, '2025-03-03', '2025-03-09', 'week-weekday', 'precip', { op: 'lte', threshold: 0 });
+  assert.deepEqual(dry.total, { matches: 2, count: 5, days: 7 }); // dias secos: os dois zeros
+  assert.equal(dry.scale, 'sun');
+});
+
+test('contagem por semana soma semanas ISO e o total da matriz bate com a soma das linhas', () => {
+  const rows = daily('2024-12-23', '2025-01-12').map(row => ({ ...row, min: row.date < '2025-01-01' ? 8 : 15 }));
+  const matrix = buildMatrix(rows, '2024-12-23', '2025-01-12', 'year-week', 'min', { op: 'lte', threshold: 10 });
+  assert.deepEqual(matrix.rows.map(row => [row.key, row.total.matches]), [['2025', 2], ['2024', 7]]);
+  assert.equal(matrix.rows[0].cells[0].value, 2); // semana de 30/12 a 05/01: dois dias ainda em 2024
+  assert.equal(matrix.total.matches, 9);
+  assert.equal(matrix.maxTotal, 7);
+});
+
+test('critérios de contagem têm padrão válido por variável e recusam limites fora da faixa', () => {
+  for (const metric of Object.keys(METRICS)) assert.equal(validCount(metric, COUNT_DEFAULTS[metric]), true, metric);
+  assert.equal(validCount('sun', { op: 'gte', threshold: 25 }), false);
+  assert.equal(validCount('precip', { op: 'gte', threshold: -1 }), false);
+  assert.equal(validCount('max', { op: 'entre', threshold: 30 }), false);
+  assert.equal(validCount('max', { op: 'gte', threshold: Number.NaN }), false);
+  assert.equal(validCount('max', null), false);
+  assert.throws(() => buildMatrix([], '2025-01-01', '2025-01-02', 'month-day', 'max', { op: 'gte', threshold: 99 }), /Critério/);
+  assert.equal(countScale('precip', 'gte'), 'rain');
+  assert.equal(countScale('sun', 'lte'), 'rain');
+  assert.equal(countScale('mean', 'gte'), 'hot');
+  assert.match(gradientCSS('cold'), /rgb\(33, 102, 172\) 100%\)$/);
 });

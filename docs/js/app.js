@@ -1,4 +1,6 @@
-/* Dashboard clima-sp: lê os JSONs gerados pelo pipeline e renderiza os blocos. */
+/* Dashboard clima-sp: lê os JSONs gerados pelo pipeline e renderiza os blocos.
+   Os painéis do modelo sazonal existem por ponto modelado (São Paulo, Valinhos…): explorer.mjs
+   avisa qual vale para a cidade escolhida pelo evento "clima:modelo" e os painéis são refeitos. */
 
 if (globalThis.Chart) {
   Chart.defaults.responsive = true;
@@ -15,11 +17,31 @@ const NOMES_VAR = {
   temperatura: { titulo: "🌡️ Temperatura média", unidade: "°C" },
 };
 
-async function carregar(nome) {
-  const resp = await fetch(`data/${nome}.json`, { cache: "no-store" });
+async function carregar(nome, pasta = "data") {
+  const resp = await fetch(`${pasta}/${nome}.json`, { cache: "no-store" });
   if (!resp.ok) throw new Error(`falha ao carregar ${nome}.json`);
   return resp.json();
 }
+
+// Um gráfico por canvas: refazer um painel destrói o gráfico anterior.
+const graficos = {};
+function grafico(id, config) {
+  graficos[id]?.destroy();
+  delete graficos[id];
+  const el = document.getElementById(id);
+  if (!el) return null; // HTML antigo em cache
+  graficos[id] = new Chart(el, config);
+  return graficos[id];
+}
+function apagarGrafico(id) {
+  graficos[id]?.destroy();
+  delete graficos[id];
+}
+
+// Ponto modelado em exibição; o padrão vale se explorer.mjs não carregar.
+const MODELO_PADRAO = { slug: "sao-paulo", nome: "São Paulo", dados: "data",
+                        latitude: -23.5, longitude: -46.62, exato: true };
+let modelo = null;
 
 function fmtMes(iso) {
   const [ano, mes] = iso.split("-").map(Number);
@@ -35,8 +57,6 @@ function barraProbs(v) {
   ).join("");
   return `<div class="barra">${html}</div>`;
 }
-
-const chartsMensais = {};
 
 const NOMES_MES = ["", "janeiro", "fevereiro", "março", "abril", "maio", "junho",
                    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -77,8 +97,6 @@ function renderMensal(mensal, { anos = 2, mes = null } = {}) {
   };
 
   for (const [varName, cfg] of Object.entries(configVar)) {
-    if (!document.getElementById(cfg.canvas)) continue; // HTML antigo em cache
-    if (chartsMensais[cfg.canvas]) chartsMensais[cfg.canvas].destroy();
     // séries com null fora do seu trecho; previsão começa colada no último observado
     const observado = [...hp.map(x => x[varName]), ...pp.map(() => null)];
     const esperado = labels.map(() => null);
@@ -100,7 +118,7 @@ function renderMensal(mensal, { anos = 2, mes = null } = {}) {
       ? `${cfg.base} — só ${NOMES_MES[Number(mes)]}, ano a ano`
       : `${cfg.base} mensal`;
 
-    chartsMensais[cfg.canvas] = new Chart(document.getElementById(cfg.canvas), {
+    grafico(cfg.canvas, {
       type: "line",
       data: {
         labels,
@@ -132,27 +150,29 @@ function renderMensal(mensal, { anos = 2, mes = null } = {}) {
   }
 }
 
-function ligarSeletores(mensal) {
-  const estado = { anos: 2, mes: null };
+// Os seletores valem para qualquer ponto: trocar de cidade mantém o recorte escolhido.
+const estadoMensal = { anos: 2, mes: null, dados: null };
+function atualizarMensal() {
+  if (estadoMensal.dados) renderMensal(estadoMensal.dados, { anos: estadoMensal.anos, mes: estadoMensal.mes });
+  document.getElementById("seletor-anos")?.classList.toggle("desativado", !!estadoMensal.mes);
+}
+function ligarSeletores() {
   const seletorAnos = document.getElementById("seletor-anos");
   const seletorMes = document.getElementById("seletor-mes");
-  const atualizar = () => {
-    renderMensal(mensal, { anos: estado.anos, mes: estado.mes });
-    if (seletorAnos) seletorAnos.classList.toggle("desativado", !!estado.mes);
-  };
   seletorAnos?.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
       seletorAnos.querySelectorAll("button").forEach(b => b.classList.remove("ativo"));
       btn.classList.add("ativo");
-      estado.anos = Number(btn.dataset.anos);
-      atualizar();
+      estadoMensal.anos = Number(btn.dataset.anos);
+      atualizarMensal();
     });
   });
   seletorMes?.addEventListener("change", () => {
-    estado.mes = seletorMes.value || null;
-    atualizar();
+    estadoMensal.mes = seletorMes.value || null;
+    atualizarMensal();
   });
 }
+ligarSeletores();
 
 const NOMES_PREDITORES = {
   oni: "ONI (El Niño/La Niña)",
@@ -165,7 +185,9 @@ const NOMES_PREDITORES = {
 
 function renderLog(log) {
   const el = document.getElementById("tabela-log");
-  if (!el || !log.length) return;
+  if (!el) return;
+  el.innerHTML = "";
+  if (!log.length) return;
   const sinal = v => (v >= 0 ? "+" : "") + v;
   const fmtData = iso => new Date(iso).toLocaleDateString("pt-BR");
   const linhas = log.map(e => {
@@ -193,11 +215,9 @@ function renderInfluencias(infl) {
   ];
   const coresLead = { 3: "#123c63", 6: "#1c5d99", 12: "#6f9cc4", 24: "#b9cfe2" };
   for (const cfg of cfgs) {
-    const el = document.getElementById(cfg.canvas);
-    if (!el) continue;
     const dados = infl[cfg.var];
     const features = Object.keys(NOMES_PREDITORES);
-    new Chart(el, {
+    grafico(cfg.canvas, {
       type: "bar",
       data: {
         labels: features.map(f => NOMES_PREDITORES[f]),
@@ -224,17 +244,16 @@ function mediaMovel(valores, janela) {
 }
 
 function renderAnual(anual) {
-  const el = document.getElementById("grafico-anual");
-  if (!el) return;
+  if (!document.getElementById("grafico-anual")) return;
   const taxa = anual.taxa_aquecimento_decada;
   const total = (taxa * (anual.anos.at(-1) - anual.taxa_desde) / 10).toFixed(1);
   document.getElementById("aquecimento-texto").innerHTML =
-    `A temperatura média anual no ponto da RMSP sobe <strong>${taxa.toFixed(2).replace(".", ",")} °C por década</strong>
+    `A temperatura média anual no ponto de ${modelo.nome} sobe <strong>${taxa.toFixed(2).replace(".", ",")} °C por década</strong>
      desde ${anual.taxa_desde} (≈ ${String(total).replace(".", ",")} °C acumulados) — a linha escura é a média móvel
      de 10 anos, que filtra o sobe-e-desce de El Niño/La Niña e deixa a tendência à mostra.
      É este sinal que o termo "tendência" do modelo captura, e é ele que inclina as previsões
      longas de temperatura para "acima do normal".`;
-  new Chart(el, {
+  grafico("grafico-anual", {
     type: "line",
     data: {
       labels: anual.anos,
@@ -246,7 +265,7 @@ function renderAnual(anual) {
       ],
     },
     options: {
-      plugins: { title: { display: true, text: "Temperatura média anual — RMSP (Open-Meteo, 1940–presente)" } },
+      plugins: { title: { display: true, text: `Temperatura média anual — ${modelo.nome} (Open-Meteo, 1940–presente)` } },
       scales: { x: { ticks: { maxTicksLimit: 5, maxRotation: 0 } }, y: { title: { display: true, text: "°C" } } },
       interaction: { mode: "index", intersect: false },
     },
@@ -274,12 +293,6 @@ function renderPrevisao(prev) {
       ${blocos}
     </div>`;
   }).join("");
-
-  cont.insertAdjacentHTML("afterend",
-    `<p class="legenda">Cores: <i style="background:var(--abaixo)"></i> abaixo do normal
-     <i style="background:var(--normal)"></i> dentro do normal
-     <i style="background:var(--acima)"></i> acima do normal.
-     Com habilidade baixa, as barras ficam próximas de 33/33/33 — isso é o resultado honesto.</p>`);
 }
 
 function renderSkill(skill) {
@@ -287,7 +300,7 @@ function renderSkill(skill) {
   const porVar = v => leads.map(l =>
     (skill.find(s => s.var === v && s.lead === l) || {}).rpss ?? null);
 
-  new Chart(document.getElementById("grafico-skill"), {
+  grafico("grafico-skill", {
     type: "bar",
     data: {
       labels: leads.map(l => `+${l} meses`),
@@ -359,7 +372,7 @@ function renderIndices(indices) {
 
 function renderMeta(meta) {
   const quando = new Date(meta.gerado_em).toLocaleString("pt-BR");
-  document.getElementById("atualizacao").textContent = `Última atualização sazonal: ${quando} (seu horário local)`;
+  document.getElementById("atualizacao").textContent = `Última atualização sazonal de ${modelo.nome}: ${quando} (seu horário local)`;
   const defas = Object.entries(meta.defasagens_indices_meses)
     .map(([k, v]) => `${k.toUpperCase()}: ${v}m`).join(" · ");
   document.getElementById("meta-rodape").textContent =
@@ -368,28 +381,86 @@ function renderMeta(meta) {
 }
 
 // Cada arquivo e painel é independente, inclusive a previsão ao vivo em explorer.mjs.
-(async () => {
-  const tasks = [
-    ['mensal', data => { renderMensal(data, {}); ligarSeletores(data); }, 'seletor-anos'],
-    ['influencias', renderInfluencias, 'grafico-infl-chuva'],
-    ['anual', renderAnual, 'aquecimento-texto'],
-    ['previsao', renderPrevisao, 'previsao-intro'],
-    ['skill', renderSkill, 'tabela-skill'],
-    ['indices', renderIndices, 'enso-estado'],
-    ['meta', renderMeta, 'atualizacao'],
-    ['log', renderLog, 'tabela-log'],
-  ];
-  await Promise.allSettled(tasks.map(async ([name, render, target]) => {
-    try { render(await carregar(name)); }
-    catch (error) {
-      const message = document.createElement('p');
-      message.className = 'panel-error';
-      message.textContent = `Não foi possível carregar este painel. Recarregue a página para tentar novamente. (${name})`;
-      document.getElementById(target)?.before(message);
-      console.error(name, error);
+async function carregarPaineis(tarefas, pasta, vigente = () => true) {
+  await Promise.allSettled(tarefas.map(async ([nome, render, alvo]) => {
+    try {
+      const dados = await carregar(nome, pasta);
+      if (vigente()) render(dados);
+    } catch (error) {
+      if (!vigente()) return;
+      const message = document.createElement("p");
+      message.className = "panel-error";
+      message.dataset.painel = nome;
+      message.textContent = `Não foi possível carregar este painel. Recarregue a página para tentar novamente. (${nome})`;
+      document.getElementById(alvo)?.before(message);
+      console.error(nome, error);
     }
   }));
-})();
+}
+
+// Painéis do ponto modelado: refeitos a cada troca de cidade.
+const PAINEIS_DO_MODELO = [
+  ["mensal", dados => { estadoMensal.dados = dados; atualizarMensal(); }, "seletor-anos"],
+  ["influencias", renderInfluencias, "grafico-infl-chuva"],
+  ["anual", renderAnual, "aquecimento-texto"],
+  ["previsao", renderPrevisao, "previsao-intro"],
+  ["skill", renderSkill, "tabela-skill"],
+  ["meta", renderMeta, "atualizacao"],
+  ["log", renderLog, "tabela-log"],
+];
+const GRAFICOS_DO_MODELO = ["grafico-chuva", "grafico-temp", "grafico-infl-chuva", "grafico-infl-temp",
+                            "grafico-anual", "grafico-skill"];
+const TEXTOS_DO_MODELO = ["aquecimento-texto", "previsao-intro", "cards-previsao", "tabela-skill",
+                          "tabela-log", "atualizacao", "meta-rodape"];
+
+// Nada do ponto anterior fica na tela enquanto o novo carrega ou se um arquivo dele faltar.
+function limparPaineisDoModelo() {
+  GRAFICOS_DO_MODELO.forEach(apagarGrafico);
+  for (const id of TEXTOS_DO_MODELO) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+  }
+  document.querySelectorAll(".panel-error[data-painel]").forEach(el => {
+    if (PAINEIS_DO_MODELO.some(([nome]) => nome === el.dataset.painel)) el.remove();
+  });
+  estadoMensal.dados = null;
+}
+
+const fmtCoord = v => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function descreverModelo(d) {
+  const texto = (id, valor) => { const el = document.getElementById(id); if (el) el.textContent = valor; };
+  const ponto = `${d.nome} (${fmtCoord(d.latitude)}; ${fmtCoord(d.longitude)})`;
+  texto("trends-title", `Tendências · ${d.nome}`);
+  if (d.exato) {
+    texto("trends-scope", `Modelo sazonal ajustado ao ponto de ${ponto}.`);
+    texto("about-scope", `Os painéis do modelo abaixo se referem a ${d.nome}.`);
+    return;
+  }
+  const km = Math.max(1, Math.round(d.distanciaKm)).toLocaleString("pt-BR");
+  // Anomalias sazonais são parecidas em escala regional; além disso, o ponto vizinho não diz nada.
+  const alcance = d.distanciaKm > 300 ? ` A essa distância, estas tendências não valem para ${d.local}.` : "";
+  texto("trends-scope", `Não há modelo sazonal para ${d.local}. Mostrando o ponto modelado mais próximo: ${ponto}, a cerca de ${km} km.${alcance}`);
+  texto("about-scope", `Os painéis do modelo abaixo se referem a ${d.nome}, o ponto modelado mais próximo de ${d.local}.`);
+}
+
+let carga = 0;
+function mostrarModelo(d) {
+  const trocou = !modelo || modelo.slug !== d.slug;
+  modelo = d;
+  descreverModelo(d);
+  if (!trocou) return;
+  const estaCarga = ++carga;
+  limparPaineisDoModelo();
+  carregarPaineis(PAINEIS_DO_MODELO, d.dados, () => estaCarga === carga);
+}
+
+document.addEventListener("clima:modelo", event => mostrarModelo(event.detail));
+if (globalThis.climaModelo) mostrarModelo(globalThis.climaModelo);
+// Sem explorer.mjs (módulos indisponíveis ou falha de carga), fica o ponto padrão.
+window.addEventListener("load", () => { if (!modelo) mostrarModelo(MODELO_PADRAO); });
+
+// Os índices climáticos são os mesmos para todos os pontos: carregados uma vez.
+carregarPaineis([["indices", renderIndices, "enso-estado"]], "data");
 
 const now = new Date();
 let nextUpdate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 5, 9));

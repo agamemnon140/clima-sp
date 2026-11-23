@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { addDays, datesBetween } from '../../docs/js/weather-data.mjs';
 
 const chartCode = await readFile('node_modules/chart.js/dist/chart.umd.js', 'utf8');
-async function mockWeather(page, { archiveFail = false, seasonalFail = false, forecastFail = false, geoTimezone = 'America/Sao_Paulo' } = {}) {
+async function mockWeather(page, { archiveFail = false, seasonalFail = false, forecastFail = false, valinhosFail = false, geoTimezone = 'America/Sao_Paulo' } = {}) {
   await page.clock.setFixedTime(new Date('2026-09-23T15:00:00Z'));
   await page.route('https://cdn.jsdelivr.net/**', route => route.fulfill({ contentType: 'text/javascript', body: chartCode }));
   await page.route('https://geocoding-api.open-meteo.com/**', route => route.fulfill({ json: { results: [{ name: 'Campinas', admin1: 'São Paulo', country: 'Brasil', latitude: -22.9, longitude: -47.06, timezone: 'America/Sao_Paulo' }] } }));
@@ -23,6 +23,16 @@ async function mockWeather(page, { archiveFail = false, seasonalFail = false, fo
       sunshine_duration: time.map(date => old(date) ? 18000 : 28800) } } });
   });
   if (seasonalFail) await page.route('**/data/mensal.json', route => route.fulfill({ status: 503, body: 'unavailable' }));
+  // Modelo de Valinhos: os JSONs de São Paulo com marcas próprias, para os testes não dependerem
+  // do que o pipeline já publicou e distinguirem um ponto do outro.
+  await page.route('**/data/valinhos/*.json', async route => {
+    if (valinhosFail) return route.fulfill({ status: 404, body: 'not found' });
+    const name = new URL(route.request().url()).pathname.split('/').pop();
+    const data = JSON.parse(await readFile(`docs/data/${name}`, 'utf8'));
+    if (name === 'meta.json') Object.assign(data, { local: 'Valinhos', coordenadas: { lat: -22.97, lon: -47 } });
+    if (name === 'anual.json') data.taxa_aquecimento_decada = 0.99;
+    return route.fulfill({ json: data });
+  });
 }
 async function queryDates(page, start, end) {
   await page.getByRole('button', { name: 'Personalizado', exact: true }).click();
@@ -139,8 +149,100 @@ test('troca de variável ou leitura recolore sem nova consulta e mostra horas de
   expect(requests).toBe(0);
 });
 
-test('cidade e favoritos persistem; tendências continuam em São Paulo', async ({ page }) => {
+test('contar dias conta por mês, soma por ano e no período, e mudar o limite não consulta de novo', async ({ page }) => {
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await mockWeather(page); await page.goto('/#historico');
+  await expect(page.locator('#history-content')).toBeVisible();
+  await expect(page.locator('#count-controls')).toBeHidden(); await expect(page.locator('#count-summary')).toBeHidden();
+  await queryDates(page, '2025-01-01', '2025-12-31');
+  let requests = 0; page.on('request', request => { if (request.url().includes('archive-api')) requests++; });
+  const summary = page.locator('#count-summary');
+  const threshold = page.locator('#count-threshold');
+  // No dado de teste a chuva de cada dia é o próprio dia do mês.
+  await page.getByRole('button', { name: 'Contar dias', exact: true }).click();
+  await expect(page.locator('#count-controls')).toBeVisible();
+  await expect(page.locator('#count-legend')).toHaveText('Contar os dias com chuva');
+  await expect(threshold).toHaveValue('1'); await pressed(page, '[data-op="gte"]');
+  await expect(page.locator('#matrix-caption')).toHaveText('Dias com chuva ≥ 1 mm · Ano × Mês · 01/01/2025 a 31/12/2025');
+  await expect(summary).toHaveText('365 dias com chuva ≥ 1 mm, de 365 dias com dados (100,0%)');
+  await threshold.fill('20'); await threshold.press('Enter');
+  await pressed(page, '[data-period="custom"]'); // Enter no limite não envia o formulário das datas.
+  await expect(summary).toHaveText('137 dias com chuva ≥ 20 mm, de 365 dias com dados (37,5%)');
+  await expect(page.locator('#history-matrix thead th')).toHaveText(['Ano', 'Total', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']);
+  await expect(page.locator('#history-matrix td.total-cell')).toHaveText('137');
+  await expect(page.locator('#history-matrix td.total-cell')).toHaveAttribute('title', 'Ano 2025 · 137 de 365 dias com chuva ≥ 20 mm');
+  await expect(page.locator('#history-matrix td.heat')).toHaveText(['12', '9', '12', '11', '12', '11', '12', '12', '11', '12', '11', '12']);
+  await expect(page.locator('#history-matrix td.is-max')).toHaveAttribute('title', 'janeiro de 2025 · 12 de 31 dias com chuva ≥ 20 mm · maior contagem do período');
+  await expect(page.locator('#history-matrix td.is-min')).toHaveCount(0);
+  await expect(page.locator('#matrix-legend')).toContainText('0 dias'); await expect(page.locator('#matrix-legend')).toContainText('Máx. 12 dias');
+  await expect(page.locator('#count-hint')).toHaveText('Conta os dias em que a chuva do dia ficou igual ou acima de 20 mm. Dias sem dados ficam de fora.');
+  await page.getByRole('button', { name: '≤ Igual ou abaixo', exact: true }).click();
+  await expect(summary).toContainText('240 dias com chuva ≤ 20 mm'); // O dia 20 entra dos dois lados: o limite é inclusivo.
+  await page.locator('#threshold-plus').click();
+  await expect(threshold).toHaveValue('21'); await expect(summary).toContainText('252 dias com chuva ≤ 21 mm');
+  await threshold.fill('20,5'.replace(',', '.')); await threshold.blur();
+  await expect(summary).toContainText('240 dias com chuva ≤ 20,5 mm');
+  await threshold.fill(''); await threshold.blur();
+  await expect(threshold).toHaveValue('20.5'); // Campo vazio volta ao limite em uso.
+  await page.locator('#threshold-minus').click(); await expect(threshold).toHaveValue('19.5');
+  await page.locator('#threshold-plus').click(); await page.locator('#threshold-plus').click();
+  await expect(summary).toContainText('252 dias com chuva ≤ 21,5 mm');
+  expect(requests).toBe(0);
+  // Abrir um mês mantém a contagem: os dias mostram o valor e a cor diz quem atende.
+  await page.getByRole('button', { name: /^fevereiro de 2025 · 21 de 28 dias com chuva ≤ 21,5 mm/ }).click();
+  await pressed(page, '[data-layout="month-day"]'); await pressed(page, '[data-mode="count"]');
+  await expect(page.locator('#matrix-caption')).toHaveText('Dias com chuva ≤ 21,5 mm · Mês × Dia · 01/02/2025 a 28/02/2025');
+  await expect(summary).toHaveText('21 dias com chuva ≤ 21,5 mm, de 28 dias com dados (75,0%)');
+  await expect(page.locator('#history-matrix td.hit')).toHaveCount(21); await expect(page.locator('#history-matrix td.miss')).toHaveCount(7);
+  await expect(page.locator('#history-matrix td.total-cell')).toHaveText('21');
+  await expect(page.locator('#history-matrix td.hit').first()).toHaveAttribute('title', 'sábado, 01/02/2025 · 1,0 mm · atende a chuva ≤ 21,5 mm');
+  await expect(page.locator('#history-matrix td.miss').last()).toHaveAttribute('title', 'sexta-feira, 28/02/2025 · 28,0 mm · não atende a chuva ≤ 21,5 mm');
+  await expect(page.locator('#matrix-legend')).toContainText('atende a chuva ≤ 21,5 mm');
+  // Cada variável guarda o próprio critério; a máxima do teste é sempre 30 e "≥ 30" a inclui.
+  await page.getByRole('button', { name: 'Máxima', exact: true }).click();
+  await expect(threshold).toHaveValue('30'); await pressed(page, '[data-op="gte"]');
+  await expect(page.locator('#threshold-unit')).toHaveText('°C');
+  await expect(summary).toHaveText('28 dias com máxima ≥ 30 °C, de 28 dias com dados (100,0%)');
+  await page.locator('#threshold-plus').click();
+  await expect(summary).toContainText('0 dias com máxima ≥ 31 °C');
+  await page.reload(); await expect(page.locator('#history-content')).toBeVisible();
+  await pressed(page, '[data-mode="count"]'); await expect(threshold).toHaveValue('31');
+  await expect(summary).toContainText('0 dias com máxima ≥ 31 °C');
+  await page.getByRole('button', { name: 'Chuva', exact: true }).click();
+  await expect(threshold).toHaveValue('21.5'); await pressed(page, '[data-op="lte"]');
+  await page.getByRole('button', { name: 'Valores', exact: true }).click();
+  await expect(page.locator('#count-controls')).toBeHidden(); await expect(summary).toBeHidden();
+  await expect(page.locator('#matrix-caption')).toContainText('Chuva (mm) · Mês × Dia');
+  await expect(page.locator('#history-matrix td.total-cell')).toHaveCount(0);
+  await expect(page.locator('#history-matrix td.is-max')).toHaveText('28,0');
+  expect(errors).toEqual([]);
+});
+
+test('contar dias deixa de fora os dias sem dados e soma cada ano em períodos longos', async ({ page }) => {
+  await mockWeather(page); await page.goto('/#historico'); await expect(page.locator('#history-content')).toBeVisible();
+  await page.getByRole('button', { name: 'Contar dias', exact: true }).click();
+  await page.getByRole('button', { name: 'Média', exact: true }).click(); // Padrão: média ≥ 25 °C; o teste tem 20 (desde 2021) ou 10.
+  await expect(page.locator('#count-summary')).toContainText('0 dias com temperatura média ≥ 25 °C, de 7.201 dias com dados (0,0%) · 5 sem dados no período');
+  await expect(page.locator('#history-matrix td.is-max')).toHaveCount(0);
+  await page.locator('#count-threshold').fill('15'); await page.locator('#count-threshold').blur();
+  await expect(page.locator('#count-summary')).toContainText('2.087 dias com temperatura média ≥ 15 °C'); // 01/01/2021 a 18/09/2026
+  await expect(page.locator('#history-matrix td.total-cell')).toHaveCount(20);
+  await expect(page.locator('#history-matrix td.total-cell').first()).toHaveText('261'); // 2026 até 18/09
+  await expect(page.locator('#history-matrix td.total-cell').first()).toHaveAttribute('title', 'Ano 2026 · 261 de 261 dias com temperatura média ≥ 15 °C · 5 sem dados');
+  await expect(page.locator('#history-matrix td.total-cell').nth(1)).toHaveText('365');
+  await expect(page.locator('#history-matrix td.total-cell').last()).toHaveText('0');
+  await expect(page.locator('#history-matrix tbody tr').first().locator('td.heat').last()).toHaveAttribute('title', 'setembro de 2026 · 18 de 18 dias com temperatura média ≥ 15 °C · 18/23 dias com dados');
+  await page.getByRole('button', { name: 'Ano × Semana', exact: true }).click();
+  await expect(page.locator('#history-matrix thead th')).toHaveCount(55);
+  await expect(page.locator('#count-summary')).toContainText('2.087 dias');
+  await queryDates(page, '2026-09-19', '2026-09-23');
+  await expect(page.locator('#count-summary')).toHaveText('Sem dados no intervalo para contar os dias com temperatura média ≥ 15 °C.');
+  await expect(page.locator('#history-matrix td.total-cell')).toHaveText('–');
+});
+
+test('cidade e favoritos persistem; tendências mostram o ponto modelado mais próximo', async ({ page }) => {
   await mockWeather(page); await page.goto('/');
+  await expect(page.locator('#trends-title')).toHaveText('Tendências · São Paulo');
   await page.locator('#change-location').click(); await page.locator('#city-query').fill('Campinas');
   await page.getByRole('button', { name: 'Buscar', exact: true }).click();
   await page.locator('#city-results button').click();
@@ -151,10 +253,77 @@ test('cidade e favoritos persistem; tendências continuam em São Paulo', async 
   await page.locator('[data-tab="historico"]').click();
   await expect(page.locator('#history-status')).toContainText('Campinas');
   await page.locator('[data-tab="tendencias"]').click();
-  await expect(page.locator('#trends-title')).toHaveText('Tendências · São Paulo');
-  await expect(page.locator('#location-bar')).toBeHidden();
+  await expect(page.locator('#trends-title')).toHaveText('Tendências · Valinhos');
+  await expect(page.locator('#trends-scope')).toHaveText(/^Não há modelo sazonal para Campinas, São Paulo, Brasil\. Mostrando o ponto modelado mais próximo: Valinhos \(-22,97; -47,00\), a cerca de 10 km\.$/);
+  await expect(page.locator('#location-bar')).toBeVisible();
+  await expect(page.locator('[data-preset][aria-pressed="true"]')).toHaveCount(0);
   await page.reload(); await page.locator('[data-tab="previsao"]').click();
   await expect(page.locator('#location-name')).toContainText('Campinas');
+  await page.locator('[data-tab="sobre"]').click();
+  await expect(page.locator('#about-scope')).toContainText('Valinhos, o ponto modelado mais próximo de Campinas');
+});
+
+test('atalho de Valinhos leva previsão, histórico e tendências para Valinhos, e São Paulo volta', async ({ page }) => {
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  const points = new Set(); page.on('request', request => {
+    const url = new URL(request.url()); if (url.hostname.endsWith('open-meteo.com')) points.add(`${url.hostname.split('.')[0]}:${url.searchParams.get('latitude')}`);
+  });
+  await mockWeather(page); await page.goto('/');
+  await pressed(page, '[data-preset="sao-paulo"]');
+  await expect(page.locator('#location-presets button')).toHaveText(['São Paulo', 'Valinhos', 'Outro local']);
+  await page.getByRole('button', { name: 'Valinhos', exact: true }).click();
+  await pressed(page, '[data-preset="valinhos"]');
+  await expect(page.locator('[data-preset="sao-paulo"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#location-name')).toHaveText('Valinhos, São Paulo, Brasil');
+  await expect(page.locator('#forecast-status')).toContainText('Previsão para Valinhos');
+  await page.locator('[data-tab="historico"]').click();
+  await expect(page.locator('#history-status')).toContainText('ERA5 · Valinhos');
+  expect([...points].sort()).toEqual(['api:-22.97', 'api:-23.5', 'archive-api:-22.97']);
+  await page.locator('[data-tab="tendencias"]').click();
+  await expect(page.locator('#location-bar')).toBeVisible();
+  await expect(page.locator('#trends-title')).toHaveText('Tendências · Valinhos');
+  await expect(page.locator('#trends-scope')).toHaveText('Modelo sazonal ajustado ao ponto de Valinhos (-22,97; -47,00).');
+  await expect(page.locator('#aquecimento-texto')).toContainText('no ponto de Valinhos sobe 0,99 °C por década');
+  await expect(page.locator('#atualizacao')).toContainText('Última atualização sazonal de Valinhos');
+  await expect(page.locator('#cards-previsao .card')).toHaveCount(4);
+  await expect(page.locator('#cards-indices .card-indice')).toHaveCount(4);
+  await expect(page.locator('#tendencias .legenda')).toHaveCount(1);
+  await expect(page.locator('#meta-rodape')).toContainText('(-22.97, -47)');
+  await page.locator('#seletor-anos [data-anos="10"]').click();
+  await page.locator('[data-tab="sobre"]').click();
+  await expect(page.locator('#about-scope')).toHaveText('Os painéis do modelo abaixo se referem a Valinhos.');
+  await expect(page.locator('#tabela-skill tr')).toHaveCount(9);
+  await page.reload();
+  await pressed(page, '[data-preset="valinhos"]');
+  await expect(page.locator('#about-scope')).toContainText('Valinhos');
+  await page.locator('[data-tab="tendencias"]').click();
+  await expect(page.locator('#trends-title')).toHaveText('Tendências · Valinhos');
+  await page.getByRole('button', { name: 'São Paulo', exact: true }).click();
+  await expect(page.locator('#trends-title')).toHaveText('Tendências · São Paulo');
+  await expect(page.locator('#trends-scope')).toHaveText('Modelo sazonal ajustado ao ponto de São Paulo (-23,50; -46,62).');
+  await expect(page.locator('#aquecimento-texto')).toContainText('no ponto de São Paulo sobe');
+  await expect(page.locator('#aquecimento-texto')).not.toContainText('0,99');
+  await expect(page.locator('#meta-rodape')).toContainText('(-23.5, -46.62)');
+  await expect(page.locator('#cards-previsao .card')).toHaveCount(4);
+  await expect(page.locator('#cards-indices .card-indice')).toHaveCount(4);
+  await expect(page.locator('#tendencias .legenda')).toHaveCount(1);
+  await expect(page.locator('.panel-error')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('sem os dados sazonais de Valinhos os painéis avisam, sem sobras de São Paulo, e a volta recupera', async ({ page }) => {
+  await mockWeather(page, { valinhosFail: true }); await page.goto('/#tendencias');
+  await expect(page.locator('#cards-previsao .card')).toHaveCount(4);
+  await page.getByRole('button', { name: 'Valinhos', exact: true }).click();
+  await expect(page.locator('#trends-title')).toHaveText('Tendências · Valinhos');
+  await expect(page.locator('.panel-error')).toHaveCount(7);
+  await expect(page.locator('#cards-previsao .card')).toHaveCount(0);
+  await expect(page.locator('#aquecimento-texto')).toBeEmpty();
+  await expect(page.locator('#cards-indices .card-indice')).toHaveCount(4); // Índices são comuns aos pontos.
+  await expect(page.locator('#forecast-status')).toContainText('Previsão para Valinhos');
+  await page.getByRole('button', { name: 'São Paulo', exact: true }).click();
+  await expect(page.locator('#cards-previsao .card')).toHaveCount(4);
+  await expect(page.locator('.panel-error')).toHaveCount(0);
 });
 
 test('falha de painel sazonal não derruba a previsão nem o histórico', async ({ page }) => {
@@ -186,6 +355,13 @@ test('iPhone estreito e texto ampliado preservam leitura e não transbordam', as
   await page.screenshot({ path: testInfo.outputPath('iphone-matriz.png') });
   await page.getByRole('button', { name: 'Personalizado', exact: true }).click();
   await noOverflow(page);
+  await page.getByRole('button', { name: 'Contar dias', exact: true }).click();
+  await expect(page.locator('#count-summary')).toBeVisible();
+  await noOverflow(page);
+  const countControls = await page.locator('#count-controls button, #count-controls input, #location-presets button').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().height));
+  expect(countControls.length).toBe(8);
+  expect(countControls.every(height => height >= 44)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('iphone-contagem.png'), fullPage: true });
   await page.setViewportSize({ width: 320, height: 720 });
   await page.addStyleTag({ content: 'html { font-size: 200%; }' });
   for (const tab of ['historico', 'previsao', 'tendencias', 'sobre']) {

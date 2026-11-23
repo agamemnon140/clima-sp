@@ -1,6 +1,6 @@
 import { addDays, normalizeDaily, todayIn } from './weather-data.mjs';
 
-export const SAO_PAULO = { name: 'São Paulo', region: 'São Paulo', country: 'Brasil', latitude: -23.5, longitude: -46.62, timezone: 'America/Sao_Paulo' };
+export { SAO_PAULO } from './locais.mjs';
 const VARIABLES = 'temperature_2m_mean,temperature_2m_max,temperature_2m_min,precipitation_sum,sunshine_duration';
 const memory = new Map();
 let database;

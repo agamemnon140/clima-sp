@@ -40,3 +40,14 @@ A aba Histórico foi refeita como tabela dinâmica: quatro leituras (Ano × Mês
 - Novo: horas de sol (`sunshine_duration` do ERA5, média diária). O cache passou a `clima-history-v2`; o antigo é apagado no primeiro acesso.
 - Validação: 16 testes de cálculos (matriz, semanas ISO, períodos, escala de cor, horas de sol) e 22 testes de interface (onze cenários em Chromium e WebKit com emulação de iPhone), incluindo 320 px com texto a 200 %, cabeçalhos fixos e controles de 44 px.
 - Limitações: Ano × Semana tem 53 colunas e exige rolagem horizontal; “Todos” em Mês × Dia renderiza dezenas de milhares de células. A primeira abertura baixa 20 anos (duas consultas) e “Todos” baixa 87 anos (nove consultas); depois fica em cache. Ranking de extremos considera só o que está visível.
+
+## Atualização — Valinhos e contagem de dias (22/11/2026)
+Valinhos passa a ter tudo o que São Paulo tem, e o Histórico conta dias acima ou abaixo de um limite.
+
+- Local: atalhos São Paulo e Valinhos na barra de local, que agora aparece nas quatro abas. A escolha vale para todas.
+- Tendências e os painéis do modelo em Sobre seguem a cidade: modelo próprio para São Paulo e Valinhos; nas demais cidades, o ponto modelado mais próximo, com aviso e distância. Antes eram fixos na RMSP.
+- Pipeline por local (`LOCAIS` em `src/config.py`): série mensal desde 1940, dataset, hindcast e previsão de Valinhos em `valinhos/`, dentro das pastas de dados; São Paulo segue na raiz, com saída idêntica à anterior (conferida arquivo a arquivo). Índices climáticos comuns.
+- Download da série de um local novo: blocos de dez anos com pausa, gravados um a um e retomáveis. A falha de um local não derruba os outros e o workflow commita o que foi gerado.
+- Histórico, "Contar dias": número de dias com chuva, temperatura média, mínima, máxima ou horas de sol igual ou acima (≥) ou igual ou abaixo (≤) de um limite ajustável; total do período, coluna Total por linha e destaque dos dias nas leituras por dia. Cada variável guarda o próprio limite; mudar o limite não refaz a consulta.
+- Validação: 24 testes de cálculos (contagem, limites inclusivos, pontos modelados, lista de locais igual à do pipeline), 6 testes do download retomável (sem rede) e 15 cenários de interface, incluindo troca de cidade nas quatro abas, falta dos dados de um ponto e contagem em 320 px com texto a 200 %.
+- Limitações: nesta entrega os cenários de interface rodaram no Chrome (desktop e emulação de iPhone); o WebKit do Playwright não pôde ser instalado no ambiente de desenvolvimento e ficou sem conferência. A série de Valinhos usa a seleção automática de modelos do Open-Meteo, a mesma de São Paulo, e não o ERA5 explícito do Histórico.

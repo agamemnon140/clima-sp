@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Clima — previsão e histórico</title>
-  <meta name="description" content="Consulte chuva, temperatura média, máxima e mínima por dia, semana, mês e ano. Previsão do tempo e tendências climáticas de São Paulo.">
+  <meta name="description" content="Consulte chuva, temperatura média, máxima e mínima por dia, semana, mês e ano. Previsão do tempo e tendências climáticas de São Paulo e Valinhos.">
   <meta name="theme-color" content="#123c63">
   <link rel="icon" type="image/svg+xml" href="logo.svg">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Clima">
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="css/style.css?v=9">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script defer src="js/app.js?v=8"></script>
-  <script type="module" src="js/explorer.mjs?v=8"></script>
+  <script defer src="js/app.js?v=9"></script>
+  <script type="module" src="js/explorer.mjs?v=9"></script>
 </head>
 <body>
 <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
@@ -33,7 +33,7 @@
   <noscript><p class="aviso">Ative o JavaScript para consultar os dados interativos.</p></noscript>
   <section class="location-bar" id="location-bar" aria-label="Localização da consulta">
     <div><span class="eyebrow">Local da consulta</span><strong id="location-name">São Paulo, Brasil</strong><span id="location-timezone" class="muted"></span></div>
-    <button id="change-location" type="button">Alterar local</button>
+    <div class="location-actions" id="location-presets" role="group" aria-label="Trocar de local"><button id="change-location" type="button">Outro local</button></div>
   </section>
   <dialog id="location-dialog" aria-labelledby="location-title">
     <div class="dialog-header"><h2 id="location-title">Escolher localização</h2><button id="close-location" aria-label="Fechar localização" type="button">Fechar</button></div>
@@ -41,7 +41,7 @@
     <p id="location-status" role="status"></p><div id="city-results" class="city-results"></div>
     <button id="use-location" type="button">Usar minha localização</button>
     <h3>Favoritos</h3><div id="favorites" class="favorites"></div><button id="save-location" type="button">Salvar local atual nos favoritos</button>
-    <p class="muted">A escolha vale para Previsão e Histórico. Tendências usa o modelo de São Paulo.</p>
+    <p class="muted">A escolha vale para todas as abas. Tendências tem modelo próprio para São Paulo e Valinhos; nas demais cidades, mostra o ponto modelado mais próximo.</p>
   </dialog>
 
   <div id="previsao" class="tab-panel" aria-labelledby="forecast-title">
@@ -55,7 +55,7 @@
         <p class="chart-hint">Toque em um ponto para consultar seus valores.</p><p id="forecast-selection" class="selection" aria-live="polite"></p>
         <h3>Dia a dia</h3><div id="forecast-list" class="period-list"></div>
       </div>
-      <details><summary>Como interpretar a previsão</summary><p>Valores previstos pelo Open-Meteo, não medições. A incerteza aumenta nos dias mais distantes. A chuva é o acumulado em mm; a média de temperatura é diferente da média entre máxima e mínima.</p><p>Para os próximos meses em São Paulo, consulte <a href="#tendencias">Tendências</a>.</p></details>
+      <details><summary>Como interpretar a previsão</summary><p>Valores previstos pelo Open-Meteo, não medições. A incerteza aumenta nos dias mais distantes. A chuva é o acumulado em mm; a média de temperatura é diferente da média entre máxima e mínima.</p><p>Para os próximos meses, consulte <a href="#tendencias">Tendências</a> (modelo sazonal de São Paulo e de Valinhos).</p></details>
     </section>
   </div>
 
@@ -70,20 +70,30 @@
         </div>
         <fieldset><legend>Leitura</legend><div class="segmented segmented-layout" id="history-layouts"><button type="button" data-layout="year-month" aria-pressed="false">Ano × Mês</button><button type="button" data-layout="year-week" aria-pressed="false">Ano × Semana</button><button type="button" data-layout="month-day" aria-pressed="true">Mês × Dia</button><button type="button" data-layout="week-weekday" aria-pressed="false">Semana × Dia</button></div></fieldset>
         <fieldset><legend>Variável</legend><div class="segmented segmented-metric" id="history-metrics"><button type="button" data-metric="precip" aria-pressed="true">Chuva</button><button type="button" data-metric="mean" aria-pressed="false">Média</button><button type="button" data-metric="min" aria-pressed="false">Mínima</button><button type="button" data-metric="max" aria-pressed="false">Máxima</button><button type="button" data-metric="sun" aria-pressed="false">Horas de sol</button></div></fieldset>
+        <fieldset><legend>Mostrar</legend><div class="segmented segmented-mode" id="history-modes"><button type="button" data-mode="value" aria-pressed="true">Valores</button><button type="button" data-mode="count" aria-pressed="false">Contar dias</button></div></fieldset>
+        <div id="count-controls" hidden>
+        <fieldset><legend id="count-legend">Contar os dias com chuva</legend>
+          <div class="segmented segmented-op" id="count-ops"><button type="button" data-op="gte" aria-pressed="true">≥ Igual ou acima</button><button type="button" data-op="lte" aria-pressed="false">≤ Igual ou abaixo</button></div>
+          <label id="threshold-label" class="threshold-label" for="count-threshold">Limite</label>
+          <div class="threshold-row"><button id="threshold-minus" type="button" aria-label="Diminuir o limite em 1">−</button><div class="threshold-field"><input id="count-threshold" type="number" inputmode="decimal" step="any" autocomplete="off" aria-describedby="count-hint"><span id="threshold-unit">mm</span></div><button id="threshold-plus" type="button" aria-label="Aumentar o limite em 1">+</button></div>
+          <p id="count-hint" class="chart-hint" aria-live="polite"></p>
+        </fieldset>
+        </div>
       </form>
       <p id="history-status" role="status"></p><button id="history-retry" type="button" hidden>Tentar novamente</button>
       <div id="history-content" hidden>
+        <p id="count-summary" class="count-summary" hidden></p>
         <p class="chart-hint">Toque em um mês, semana ou ano para abrir seus dias. As cores comparam apenas os valores visíveis; deslize para ver todas as colunas.</p>
         <p id="matrix-caption" class="matrix-caption"></p>
         <div class="table-scroll matrix-scroll" role="region" aria-label="Matriz do histórico, deslize para ver todas as colunas" tabindex="0"><table id="history-matrix" class="heatmap" aria-labelledby="matrix-caption" aria-describedby="matrix-legend"></table></div>
         <div id="matrix-legend" class="matrix-legend"></div>
       </div>
-      <details><summary>Fonte, cobertura e cálculo</summary><p>Histórico ERA5 via <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener">Open-Meteo</a>: reanálise em grade, não medição de uma estação. Publicação com cerca de cinco dias de atraso; dados recentes podem ser revisados. O dia segue o fuso da localização.</p><p>Chuva: soma dos dias. Temperatura média: média das médias diárias disponíveis. Máxima e mínima: extremos absolutos do período. Horas de sol: média diária da duração de sol do ERA5, derivada da radiação (limiar de 120 W/m²), não de um heliógrafo. Falhas aparecem como “–” (sem dados), nunca como zero.</p><p>Semanas vão de segunda a domingo e, em Ano × Semana, pertencem ao ano da sua quinta-feira (padrão ISO). As cores usam apenas os valores visíveis na matriz; o máximo e o mínimo recebem contorno. Passe o mouse ou toque para ver o valor completo e a cobertura de dias.</p><p>Consultas ficam em cache neste dispositivo. A primeira consulta de um intervalo longo pode demorar; intervalos de vários anos ficam melhores em Ano × Mês ou Ano × Semana.</p></details>
+      <details><summary>Fonte, cobertura e cálculo</summary><p>Histórico ERA5 via <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener">Open-Meteo</a>: reanálise em grade, não medição de uma estação. Publicação com cerca de cinco dias de atraso; dados recentes podem ser revisados. O dia segue o fuso da localização.</p><p>Chuva: soma dos dias. Temperatura média: média das médias diárias disponíveis. Máxima e mínima: extremos absolutos do período. Horas de sol: média diária da duração de sol do ERA5, derivada da radiação (limiar de 120 W/m²), não de um heliógrafo. Falhas aparecem como “–” (sem dados), nunca como zero.</p><p>Semanas vão de segunda a domingo e, em Ano × Semana, pertencem ao ano da sua quinta-feira (padrão ISO). As cores usam apenas os valores visíveis na matriz; o máximo e o mínimo recebem contorno. Passe o mouse ou toque para ver o valor completo e a cobertura de dias.</p><p>Contar dias: em vez do valor do período, cada célula mostra em quantos dias o valor diário da variável ficou igual ou acima (≥) ou igual ou abaixo (≤) do limite escolhido. A coluna Total soma a linha, e o resumo acima da matriz soma o período inteiro. Dias sem dados não entram na conta. Nas leituras por dia, a célula mantém o valor do dia e ganha cor quando atende ao critério.</p><p>Consultas ficam em cache neste dispositivo. A primeira consulta de um intervalo longo pode demorar; intervalos de vários anos ficam melhores em Ano × Mês ou Ano × Semana.</p></details>
     </section>
   </div>
 
   <div id="tendencias" class="tab-panel" hidden aria-labelledby="trends-title">
-    <section class="scope-note"><span class="eyebrow">Modelo regional</span><h2 id="trends-title" tabindex="-1">Tendências · São Paulo</h2><p>Esta seção permanece no ponto da RMSP (-23,5; -46,62), independentemente da cidade escolhida em Previsão e Histórico.</p><p id="atualizacao"></p></section>
+    <section class="scope-note"><span class="eyebrow">Modelo sazonal</span><h2 id="trends-title" tabindex="-1">Tendências · São Paulo</h2><p id="trends-scope">Modelo sazonal ajustado ao ponto de São Paulo (-23,50; -46,62).</p><p id="atualizacao"></p></section>
       <section id="aviso" class="aviso">
     <strong>Leia antes de usar:</strong> nenhum modelo no mundo prevê o tempo de forma determinística
     com meses de antecedência. O que este modelo (e os centros oficiais) fazem é estimar
@@ -138,20 +148,25 @@
     <h2>📅 Previsão por trimestre (probabilidades)</h2>
     <p id="previsao-intro"></p>
     <div id="cards-previsao" class="cards"></div>
+    <p class="legenda">Cores: <i style="background:var(--abaixo)"></i> abaixo do normal
+     <i style="background:var(--normal)"></i> dentro do normal
+     <i style="background:var(--acima)"></i> acima do normal.
+     Com habilidade baixa, as barras ficam próximas de 33/33/33 — isso é o resultado honesto.</p>
   </section>
   <section>
     <h2>🌊 Índices climáticos agora</h2>
     <p>Estes quatro índices medem o estado dos oceanos e da circulação atmosférica —
        as componentes lentas do clima que dão alguma previsibilidade meses à frente.
-       São os preditores que alimentam o modelo; cada card explica o que o índice
-       significa e como costuma afetar São Paulo.</p>
+       São os preditores que alimentam o modelo, os mesmos para São Paulo e Valinhos;
+       cada card explica o que o índice significa e como costuma afetar o Sudeste.</p>
     <p id="enso-estado"></p>
     <div id="cards-indices" class="cards-indices"></div>
   </section>
   </div>
   <div id="sobre" class="tab-panel" hidden aria-labelledby="about-title">
     <h2 id="about-title" tabindex="-1">Sobre os dados</h2>
-    <p>Previsão mostra o futuro próximo. Histórico consulta a reanálise ERA5. Tendências reúne as projeções do modelo sazonal de São Paulo, com sua incerteza.</p>
+    <p>Previsão mostra o futuro próximo. Histórico consulta a reanálise ERA5. Tendências reúne as projeções do modelo sazonal, ajustado separadamente para São Paulo e para Valinhos, com sua incerteza.</p>
+    <p id="about-scope" class="scope-note">Os painéis do modelo abaixo se referem a São Paulo.</p>
       <section>
     <h2>⚖️ O que move a previsão</h2>
     <p>Efeito de <strong>+1 desvio padrão</strong> de cada índice sobre a anomalia do trimestre
@@ -196,8 +211,9 @@
       <summary>Como o modelo funciona</summary>
       <ul>
         <li><strong>Alvo:</strong> anomalias de precipitação acumulada e temperatura média em trimestres
-            móveis (JFM, FMA, …, DJF) para o ponto -23,5°S -46,6°O (RMSP), série desde 1940
-            via Open-Meteo, com seleção automática de modelos. Climatologia de referência: 1991–2020.
+            móveis (JFM, FMA, …, DJF) em cada ponto modelado — São Paulo (-23,50; -46,62, RMSP) e
+            Valinhos (-22,97; -47,00) —, série desde 1940 via Open-Meteo, com seleção automática de
+            modelos. Climatologia de referência: 1991–2020.
             O Histórico usa ERA5 explícito; pode haver diferenças em relação à série sazonal legada.</li>
         <li><strong>Preditores:</strong> ONI (ENSO), TSA (Atlântico Sul tropical), DMI (Dipolo do Índico),
             AAO (Oscilação Antártica) — médias dos 3 meses anteriores à inicialização — um termo de

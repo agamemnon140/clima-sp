@@ -157,6 +157,7 @@ p, li, h1, h2, h3, h4, summary, legend { overflow-wrap: anywhere; }
 .location-bar strong, .location-bar .muted { display: block; overflow-wrap: anywhere; }
 .location-bar strong { font-size: 1.15rem; }
 .location-bar button { flex-shrink: 0; }
+.location-actions { display: flex; flex-wrap: wrap; gap: .4rem; min-width: 0; }
 .eyebrow { display: block; font-size: .9rem; font-weight: 600; color: #4c5e6e; margin-bottom: .2rem; }
 .muted, .chart-hint { color: #4c5e6e; font-size: .95rem; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
@@ -206,7 +207,7 @@ legend { font-weight: 600; padding: 0; margin-bottom: .5rem; }
 .heatmap td.is-min { outline-style: dashed; }
 .heat-cell, .row-open { display: flex; width: 100%; height: 100%; min-height: 44px; align-items: center; justify-content: center; border: 0; border-radius: 4px; background: transparent; color: inherit; font-weight: inherit; font-size: inherit; padding: 0 .25rem; margin: 0; }
 .row-open { justify-content: flex-start; padding: 0; }
-.heat-cell:hover, .row-open:hover { box-shadow: inset 0 0 0 99px rgba(0, 0, 0, .1); }
+.heat-cell:hover, .row-open:hover { background: transparent; box-shadow: inset 0 0 0 99px rgba(0, 0, 0, .1); }
 .heatmap :focus-visible { outline: 3px solid var(--laranja); outline-offset: -3px; }
 .matrix-legend { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .9rem; margin: .75rem 0; font-size: .95rem; font-variant-numeric: tabular-nums; color: #22313f; }
 .legend-bar { flex: 1 1 8rem; height: 14px; border-radius: 7px; border: 1px solid #c6d4e0; }
@@ -216,13 +217,33 @@ legend { font-weight: 600; padding: 0; margin-bottom: .5rem; }
 .segmented-layout { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr)); }
 .segmented-metric { grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr)); }
 .segmented-period { grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr)); }
+.segmented-mode, .segmented-op { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
 .period-hint { margin: .5rem 0 0; }
-#custom-range { border: 1px solid #d7e3ee; border-radius: 12px; padding: .9rem .9rem 0; margin-bottom: 1rem; background: #f7fafc; }
+#custom-range, #count-controls { border: 1px solid #d7e3ee; border-radius: 12px; padding: .9rem .9rem 0; margin-bottom: 1rem; background: #f7fafc; }
+/* Contar dias: limite ajustável e resumo do período. */
+#count-controls { margin-bottom: 0; }
+.threshold-label { display: block; font-weight: 600; margin: .9rem 0 .4rem; }
+.threshold-row { display: flex; flex-wrap: wrap; align-items: stretch; gap: .5rem; }
+.threshold-row button { flex: 0 0 3.25rem; font-size: 1.4rem; line-height: 1; padding: 0; }
+.threshold-field { flex: 1 1 6rem; min-width: 0; display: flex; align-items: center; gap: .5rem; }
+.threshold-field input { flex: 1; width: 100%; font-size: 1.15rem; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+.threshold-field span { flex-shrink: 0; font-weight: 600; color: #4c5e6e; }
+#count-hint { margin: .6rem 0 0; }
+.count-summary { margin: 1rem 0 .5rem; padding: .9rem 1rem; border-radius: 12px; background: #e8f0f7; font-variant-numeric: tabular-nums; }
+.count-summary strong { display: block; font-size: 1.7rem; line-height: 1.25; color: #123c63; }
+.heatmap thead th.total-col { min-width: 3.5rem; }
+.heatmap td.total-cell { min-width: 3.5rem; font-weight: 700; color: #1f2d3a; background: #fff; box-shadow: inset 0 0 0 1px #9fb3c4; }
+.heatmap td.total-cell.empty { font-weight: 400; }
+.heatmap td.hit { font-weight: 700; }
+.heatmap td.miss { background: #fff; color: #56687a; }
+.legend-hit, .legend-miss { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.2em; border-radius: 3px; margin-right: .3em; }
+.legend-miss { background: #fff; border: 1px solid #c6d4e0; }
 #custom-range .period-navigation { margin: .5rem 0 .9rem; }
 th, td { font-size: 1rem; }
 caption { text-align: left; padding: .5rem 0; color: #4c5e6e; }
 summary { min-height: 44px; padding: .5rem 0; font-size: 1rem; }
 .scope-note { padding: 1rem; background: #e8f0f7; border-radius: 14px; }
+.scope-note p { margin: .4rem 0 0; }
 .seletor { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; font-size: 1rem; }
 .seletor button, .seletor select { font-size: 1rem; margin-left: 0; padding: .5rem .8rem; }
 .grafico { max-width: 100%; height: 350px; position: relative; margin-bottom: 1rem; }
@@ -261,6 +282,8 @@ footer { font-size: .95rem; }
   .chart-frame { height: 290px; }
   .grafico { height: 330px; padding: .5rem; }
   .location-bar { align-items: flex-start; flex-wrap: wrap; }
+  .location-actions { width: 100%; }
+  .location-actions button { flex: 1 1 auto; padding: .5rem .4rem; }
   .location-bar .muted { font-size: .9rem; }
   .date-fields { grid-template-columns: minmax(0, 1fr); }
   h2 { font-size: 1.45rem; }
@@ -276,4 +299,6 @@ footer { font-size: .95rem; }
   .metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); }
   .period-card dl { grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr)); }
   .dialog-header, .search-row, .favorite-row { flex-wrap: wrap; }
+  .threshold-field { flex-basis: 100%; order: -1; }
+  .threshold-row button { flex: 1 1 44px; }
 }
