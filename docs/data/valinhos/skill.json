@@ -1,0 +1,58 @@
+[
+  {
+    "var": "precipitacao",
+    "lead": 3,
+    "rpss": 0.0433,
+    "hit_rate": 0.3986,
+    "n": 567
+  },
+  {
+    "var": "precipitacao",
+    "lead": 6,
+    "rpss": 0.0445,
+    "hit_rate": 0.4238,
+    "n": 564
+  },
+  {
+    "var": "precipitacao",
+    "lead": 12,
+    "rpss": 0.0372,
+    "hit_rate": 0.4122,
+    "n": 558
+  },
+  {
+    "var": "precipitacao",
+    "lead": 24,
+    "rpss": 0.0503,
+    "hit_rate": 0.4377,
+    "n": 546
+  },
+  {
+    "var": "temperatura",
+    "lead": 3,
+    "rpss": 0.0835,
+    "hit_rate": 0.4533,
+    "n": 567
+  },
+  {
+    "var": "temperatura",
+    "lead": 6,
+    "rpss": 0.0529,
+    "hit_rate": 0.4025,
+    "n": 564
+  },
+  {
+    "var": "temperatura",
+    "lead": 12,
+    "rpss": 0.0291,
+    "hit_rate": 0.4032,
+    "n": 558
+  },
+  {
+    "var": "temperatura",
+    "lead": 24,
+    "rpss": 0.0741,
+    "hit_rate": 0.4432,
+    "n": 546
+  }
+]

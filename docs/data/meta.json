@@ -1,5 +1,6 @@
 {
-  "gerado_em": "2026-11-05T16:57:02+00:00",
+  "local": "São Paulo",
+  "gerado_em": "2026-11-23T00:17:09+00:00",
   "periodo_treino": "1979-presente",
   "climatologia": "1991-2020",
   "fonte_alvo": "Open-Meteo Archive API (selecao automatica de modelos)",

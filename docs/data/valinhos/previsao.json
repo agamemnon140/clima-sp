@@ -1,0 +1,122 @@
+{
+  "inicializacao": "2026-11",
+  "indices_usados": {
+    "oni": 2.14,
+    "tsa": 0.37,
+    "dmi": 0.24,
+    "aao": 0.0,
+    "trend": 2026.88
+  },
+  "defasagens_meses": {
+    "oni": 2,
+    "tsa": 2,
+    "dmi": 6,
+    "aao": 1
+  },
+  "previsoes": [
+    {
+      "lead": 3,
+      "estacao": "FMA",
+      "ano": 2027,
+      "inicio": "2027-02",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.481,
+          "p_normal": 0.279,
+          "p_acima": 0.24,
+          "anomalia": -84.65,
+          "climatologia": 383.9,
+          "limiar_abaixo": -67.47,
+          "limiar_acima": 44.6
+        },
+        "temperatura": {
+          "p_abaixo": 0.275,
+          "p_normal": 0.195,
+          "p_acima": 0.531,
+          "anomalia": 0.45,
+          "climatologia": 22.1,
+          "limiar_abaixo": -0.25,
+          "limiar_acima": 0.15
+        }
+      }
+    },
+    {
+      "lead": 6,
+      "estacao": "MJJ",
+      "ano": 2027,
+      "inicio": "2027-05",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.29,
+          "p_normal": 0.376,
+          "p_acima": 0.334,
+          "anomalia": -15.62,
+          "climatologia": 157.5,
+          "limiar_abaixo": -41.47,
+          "limiar_acima": 49.96
+        },
+        "temperatura": {
+          "p_abaixo": 0.276,
+          "p_normal": 0.221,
+          "p_acima": 0.503,
+          "anomalia": 0.63,
+          "climatologia": 17.6,
+          "limiar_abaixo": -0.39,
+          "limiar_acima": 0.13
+        }
+      }
+    },
+    {
+      "lead": 12,
+      "estacao": "NDJ",
+      "ano": 2027,
+      "inicio": "2027-11",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.381,
+          "p_normal": 0.196,
+          "p_acima": 0.423,
+          "anomalia": -2.11,
+          "climatologia": 618.7,
+          "limiar_abaixo": -72.3,
+          "limiar_acima": 48.3
+        },
+        "temperatura": {
+          "p_abaixo": 0.235,
+          "p_normal": 0.301,
+          "p_acima": 0.465,
+          "anomalia": 0.76,
+          "climatologia": 22.4,
+          "limiar_abaixo": -0.41,
+          "limiar_acima": 0.17
+        }
+      }
+    },
+    {
+      "lead": 24,
+      "estacao": "NDJ",
+      "ano": 2028,
+      "inicio": "2028-11",
+      "variaveis": {
+        "precipitacao": {
+          "p_abaixo": 0.503,
+          "p_normal": 0.205,
+          "p_acima": 0.292,
+          "anomalia": -53.48,
+          "climatologia": 618.7,
+          "limiar_abaixo": -72.64,
+          "limiar_acima": 49.23
+        },
+        "temperatura": {
+          "p_abaixo": 0.416,
+          "p_normal": 0.366,
+          "p_acima": 0.218,
+          "anomalia": -0.57,
+          "climatologia": 22.4,
+          "limiar_abaixo": -0.4,
+          "limiar_acima": 0.17
+        }
+      }
+    }
+  ]
+}

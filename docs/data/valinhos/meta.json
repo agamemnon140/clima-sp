@@ -1,0 +1,18 @@
+{
+  "local": "Valinhos",
+  "gerado_em": "2026-11-23T00:27:57+00:00",
+  "periodo_treino": "1979-presente",
+  "climatologia": "1991-2020",
+  "fonte_alvo": "Open-Meteo Archive API (selecao automatica de modelos)",
+  "coordenadas": {
+    "lat": -22.97,
+    "lon": -47.0
+  },
+  "defasagens_indices_meses": {
+    "oni": 2,
+    "tsa": 2,
+    "dmi": 6,
+    "aao": 1
+  },
+  "n_hindcast": 4470
+}
