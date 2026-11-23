@@ -1,4 +1,5 @@
 """Configuração central do clima-sp."""
+from dataclasses import dataclass
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -6,10 +7,53 @@ RAW_DIR = BASE_DIR / "data" / "raw"
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 DOCS_DATA_DIR = BASE_DIR / "docs" / "data"
 
-# Ponto representativo da RMSP (próximo ao Mirante de Santana)
-LATITUDE = -23.5
-LONGITUDE = -46.62
-TIMEZONE = "America/Sao_Paulo"
+
+@dataclass(frozen=True)
+class Local:
+    """Ponto com série-alvo e modelo sazonal próprios.
+
+    O local original (São Paulo) mantém os arquivos na raiz de cada pasta de dados; os
+    demais ficam numa subpasta com o próprio slug. Os índices climáticos são os mesmos
+    para todos e continuam na raiz. Os mesmos pontos estão em LOCAIS, em
+    docs/js/weather-api.mjs: ao mexer aqui, mexa lá.
+    """
+    slug: str
+    nome: str
+    latitude: float
+    longitude: float
+    timezone: str = "America/Sao_Paulo"
+    subpasta: str = ""
+
+    def _dir(self, base: Path) -> Path:
+        return base / self.subpasta if self.subpasta else base
+
+    @property
+    def raw_dir(self) -> Path:
+        return self._dir(RAW_DIR)
+
+    @property
+    def processed_dir(self) -> Path:
+        return self._dir(PROCESSED_DIR)
+
+    @property
+    def docs_data_dir(self) -> Path:
+        return self._dir(DOCS_DATA_DIR)
+
+
+LOCAIS = [
+    # Ponto representativo da RMSP (próximo ao Mirante de Santana)
+    Local("sao-paulo", "São Paulo", -23.5, -46.62),
+    Local("valinhos", "Valinhos", -22.97, -47.0, subpasta="valinhos"),
+]
+PADRAO = LOCAIS[0]
+
+
+def local_por_slug(slug: str) -> Local:
+    for local in LOCAIS:
+        if local.slug == slug:
+            return local
+    raise KeyError(f"local desconhecido: {slug} (opcoes: {', '.join(l.slug for l in LOCAIS)})")
+
 
 CLIMATOLOGY_START = 1991
 CLIMATOLOGY_END = 2020

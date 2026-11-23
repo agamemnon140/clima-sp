@@ -57,13 +57,13 @@ def skill_table(hindcast: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values(["var", "lead"]).reset_index(drop=True)
 
 
-def run() -> pd.DataFrame:
-    dataset = pd.read_csv(config.PROCESSED_DIR / "dataset.csv")
+def run(local: config.Local = config.PADRAO) -> pd.DataFrame:
+    dataset = pd.read_csv(local.processed_dir / "dataset.csv")
     hindcast = run_hindcast(dataset)
     # float_format fixo evita diffs espúrios entre plataformas no commit mensal
-    hindcast.to_csv(config.PROCESSED_DIR / "hindcast.csv", index=False, float_format="%.4f")
+    hindcast.to_csv(local.processed_dir / "hindcast.csv", index=False, float_format="%.4f")
     skill = skill_table(hindcast)
-    skill.to_csv(config.PROCESSED_DIR / "skill.csv", index=False)
+    skill.to_csv(local.processed_dir / "skill.csv", index=False)
     print(skill.to_string(index=False))
     return skill
 

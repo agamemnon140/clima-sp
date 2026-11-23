@@ -23,21 +23,21 @@ def latest_predictors(t_init: int) -> tuple[dict, dict]:
     return feats, lags
 
 
-def season_climatology() -> pd.DataFrame:
+def season_climatology(local: config.Local = config.PADRAO) -> pd.DataFrame:
     """Média 1991-2020 de cada estação, para dar contexto físico às anomalias."""
-    seasons = build_dataset.seasonal_target()
+    seasons = build_dataset.seasonal_target(local)
     clim_mask = seasons["season_year"].between(config.CLIMATOLOGY_START, config.CLIMATOLOGY_END)
     return seasons[clim_mask].groupby("season_month")[config.VARIABLES].mean()
 
 
-def run() -> dict:
+def run(local: config.Local = config.PADRAO) -> dict:
     today = date.today()
     t_init = today.year * 12 + today.month
     feats, lags = latest_predictors(t_init)
     feats["trend"] = today.year + (today.month - 0.5) / 12
 
     # persistência: anomalia da última estação totalmente observada (por variável)
-    seasons = build_dataset.seasonal_target()
+    seasons = build_dataset.seasonal_target(local)
     seasons = seasons.set_index(seasons["season_year"] * 12 + seasons["season_month"])
     t_persist = t_init - 3
     persist = {var: float(seasons.loc[t_persist, f"anom_{var}"])
@@ -47,8 +47,8 @@ def run() -> dict:
     def x_new(var):
         return pd.DataFrame([{**feats, "persist": persist[var]}])[config.FEATURES]
 
-    dataset = pd.read_csv(config.PROCESSED_DIR / "dataset.csv")
-    clim = season_climatology()
+    dataset = pd.read_csv(local.processed_dir / "dataset.csv")
+    clim = season_climatology(local)
 
     previsoes = []
     for lead in config.LEADS:

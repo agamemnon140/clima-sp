@@ -6,16 +6,22 @@ from . import config
 
 
 def load_monthly(name: str) -> pd.DataFrame:
+    """Índices climáticos: iguais para todos os locais."""
     return pd.read_csv(config.RAW_DIR / f"{name}.csv")
 
 
-def seasonal_target() -> pd.DataFrame:
+def load_alvo(local: config.Local = config.PADRAO) -> pd.DataFrame:
+    """Série mensal de chuva e temperatura do local."""
+    return pd.read_csv(local.raw_dir / "alvo_mensal.csv")
+
+
+def seasonal_target(local: config.Local = config.PADRAO) -> pd.DataFrame:
     """Agrega o alvo mensal em trimestres móveis (JFM...DJF) e calcula anomalias.
 
     Cada estação é identificada pelo (ano, mês) do seu primeiro mês.
     Anomalia relativa à climatologia 1991-2020 da mesma estação do ano.
     """
-    monthly = load_monthly("alvo_mensal").set_index(["year", "month"]).sort_index()
+    monthly = load_alvo(local).set_index(["year", "month"]).sort_index()
     rows = []
     for (year, month) in monthly.index:
         months = [(year + (month + k - 1) // 12, (month + k - 1) % 12 + 1) for k in range(3)]
@@ -50,9 +56,9 @@ def predictor_table() -> pd.DataFrame:
     return out  # index t = year*12 + month
 
 
-def build() -> None:
-    config.PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    seasons = seasonal_target()
+def build(local: config.Local = config.PADRAO) -> None:
+    local.processed_dir.mkdir(parents=True, exist_ok=True)
+    seasons = seasonal_target(local)
     seasons["t_start"] = seasons["season_year"] * 12 + seasons["season_month"]
     seasons = seasons.set_index("t_start")
     predictors = predictor_table()
@@ -93,7 +99,7 @@ def build() -> None:
                     "anomaly": season[f"anom_{var}"],
                 })
     dataset = pd.DataFrame(rows)
-    dataset.to_csv(config.PROCESSED_DIR / "dataset.csv", index=False)
+    dataset.to_csv(local.processed_dir / "dataset.csv", index=False)
 
     # sanidade: ONI deve correlacionar positivamente com chuva de verão no Sudeste em lead curto
     djf = dataset[(dataset["var"] == "precipitacao") & (dataset["lead"] == 3)

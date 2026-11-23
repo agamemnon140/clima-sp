@@ -14,6 +14,8 @@ permissions:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
+    # o primeiro download de um local novo vai em blocos espaçados (ver src/fetch_target.py)
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +31,9 @@ jobs:
         run: python -m src.run_all
 
       - name: Commit e push se houver mudanças
+        # Roda mesmo quando um local falha: o que os outros geraram e o que já foi baixado do
+        # que falhou ficam gravados, e a execução seguinte continua de onde parou.
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -38,6 +43,7 @@ jobs:
             echo "sem dados novos"
           else
             git commit -m "Atualização automática ($(date -u +%Y-%m-%d))"
-            git pull --rebase origin main
-            git push
+            # o ramo em que o workflow roda: main no agendamento, qualquer outro no disparo manual
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi

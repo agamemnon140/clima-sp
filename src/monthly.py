@@ -16,8 +16,8 @@ from . import build_dataset, config, forecast, model
 MONTHLY_LEADS = range(0, 25)  # lead 0 = mês corrente (ainda sem observação fechada)
 
 
-def monthly_anomalies() -> tuple[pd.DataFrame, pd.DataFrame]:
-    m = build_dataset.load_monthly("alvo_mensal").rename(
+def monthly_anomalies(local: config.Local = config.PADRAO) -> tuple[pd.DataFrame, pd.DataFrame]:
+    m = build_dataset.load_alvo(local).rename(
         columns={"precip": "precipitacao", "temp": "temperatura"})
     clim_mask = m["year"].between(config.CLIMATOLOGY_START, config.CLIMATOLOGY_END)
     clim = m[clim_mask].groupby("month")[config.VARIABLES].mean()
@@ -27,8 +27,8 @@ def monthly_anomalies() -> tuple[pd.DataFrame, pd.DataFrame]:
     return m.sort_values("t"), clim
 
 
-def run() -> dict:
-    monthly, clim = monthly_anomalies()
+def run(local: config.Local = config.PADRAO) -> dict:
+    monthly, clim = monthly_anomalies(local)
     predictors = build_dataset.predictor_table()
 
     today = date.today()

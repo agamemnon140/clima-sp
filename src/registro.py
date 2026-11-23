@@ -22,9 +22,9 @@ def _resumo_lead3(forecast_result: dict) -> dict:
     }
 
 
-def atualizar(forecast_result: dict) -> None:
-    path = config.DOCS_DATA_DIR / "log.json"
-    config.DOCS_DATA_DIR.mkdir(parents=True, exist_ok=True)
+def atualizar(forecast_result: dict, local: config.Local = config.PADRAO) -> None:
+    path = local.docs_data_dir / "log.json"
+    local.docs_data_dir.mkdir(parents=True, exist_ok=True)
     log = []
     if path.exists():
         log = json.loads(path.read_text(encoding="utf-8"))
@@ -43,4 +43,4 @@ def atualizar(forecast_result: dict) -> None:
     log.append(entrada)
     log.sort(key=lambda e: e["mes"], reverse=True)
     path.write_text(json.dumps(log, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"docs/data/log.json: {len(log)} execucao(oes) registrada(s)")
+    print(f"{path.relative_to(config.BASE_DIR).as_posix()}: {len(log)} execucao(oes) registrada(s)")
